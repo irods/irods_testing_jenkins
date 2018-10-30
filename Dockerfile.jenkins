@@ -1,0 +1,19 @@
+FROM jenkins/jenkins
+
+USER root
+RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils &&\
+    DEBIAN_FRONTEND=noninteractive &&\
+    apt-get install -y python-pip &&\
+    pip install docker
+
+ENV PYTHON_REPOSITORY=/ansible
+
+RUN DEBIAN_FRONTEND=noninteractive &&\
+    mkdir -p $PYTHON_REPOSITORY &&\
+    chown -R jenkins:jenkins $PYTHON_REPOSITORY/ &&\
+    chown -R jenkins:jenkins /var/jenkins_home/
+
+USER jenkins
+
+
+VOLUME ["/var/jenkins_home", "/var/run/docker.sock", "/ansible"]
