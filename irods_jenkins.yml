@@ -1,0 +1,26 @@
+version: '3.1'
+ 
+services:
+ 
+  main:
+    image: localhost:5000/irods-jenkins
+    ports:
+      - 8081:8080
+      - 50000:50000
+    volumes:
+      - ./jenkins_home:/var/jenkins_home
+      - ./irods_docker_files:/irods_docker_files
+      - /var/run/docker.sock:/var/run/docker.sock
+    secrets:
+      - jenkins-user
+      - jenkins-pass
+ 
+secrets:
+  jenkins-user:
+    external: true
+  jenkins-pass:
+    external: true
+
+volumes:
+  jenkins_home:
+  irods_docker_files:
