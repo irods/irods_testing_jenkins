@@ -6,14 +6,29 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils &
     apt-get install -y python-pip &&\
     pip install docker
 
-ENV PYTHON_REPOSITORY=/ansible
+RUN apt-get install -qqy apt-transport-https ca-certificates curl gnupg2 software-properties-common && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
+    apt-key fingerprint 0EBFCD88 && \
+    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
+    apt-get update -qq && \
+    apt-get install -qqy docker-ce && \
+    usermod -aG docker jenkins
+
+ENV IRODS_DOCKER_FILES=/irods_docker_files
+ENV JENKINS_HOME=/var/jenkins_home
 
 RUN DEBIAN_FRONTEND=noninteractive &&\
-    mkdir -p $PYTHON_REPOSITORY &&\
-    chown -R jenkins:jenkins $PYTHON_REPOSITORY/ &&\
-    chown -R jenkins:jenkins /var/jenkins_home/
+    mkdir -p $IRODS_DOCKER_FILES &&\
+    chown -R jenkins:jenkins $IRODS_DOCKER_FILES/ &&\
+    chown -R jenkins:jenkins $JENKINS_HOME/
+
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+
+COPY config/*.xml $JENKINS_HOME/
+COPY config/security.groovy /usr/share/jenkins/ref/init.groovy.d/security.groovy
+COPY config/plugins.txt /usr/share/jenkins/ref/plugins.txt
+RUN /usr/local/bin/install-plugins.sh < /usr/share/jenkins/ref/plugins.txt
 
 USER jenkins
 
-
-VOLUME ["/var/jenkins_home", "/var/run/docker.sock", "/ansible"]
+VOLUME ["/var/jenkins_home", "/var/run/docker.sock", "/irods_docker_files"]
