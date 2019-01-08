@@ -1,6 +1,7 @@
 #!groovy
 
 import jenkins.model.Jenkins
+import hudson.slaves.EnvironmentVariablesNodeProperty
 import hudson.security.HudsonPrivateSecurityRealm
 import hudson.security.GlobalMatrixAuthorizationStrategy
 import hudson.security.csrf.DefaultCrumbIssuer
@@ -21,12 +22,11 @@ strategy.add(Jenkins.ADMINISTER, adminUsername)
 instance.setAuthorizationStrategy(strategy)
 instance.save()
 
-//disable Jenkins CLI
-Jenkins.instance.getDiscriptor("jenkins.CLI").get().setEnabled(false) 
-
 //Prevent Cross Site Request Forgery exploits
-Jenkins.instance.setCrumbIssuer(new DefaultCrumbIssuer(true))
+Jenkins.getInstance().setCrumbIssuer(new DefaultCrumbIssuer(true))
 
 //Disable Slave to Master Access Control
-Jenkins.instance.getInjector().getInstance(AdminWhitelistRule.class).setMasterKillSwitch(false)
+Jenkins.getInstance().getInjector().getInstance(AdminWhitelistRule.class).setMasterKillSwitch(false)
 
+//Disable CLI over Remoting
+Jenkins.getInstance().getDescriptor("jenkins.CLI").get().setEnabled(false)
