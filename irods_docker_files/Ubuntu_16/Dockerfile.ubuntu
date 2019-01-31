@@ -1,0 +1,26 @@
+ARG base_image=ubuntu:16.04
+
+FROM $base_image
+
+RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils && \
+    apt-get install -y apt-transport-https wget lsb-release sudo && \
+    apt-get install -y python python-psutil python-requests python-jsonschema && \
+    apt-get install -y python-pip git
+
+RUN pip install --upgrade pip
+
+#RUN pip install pyOpenSSl ndg-httpsclient pyasn1 libffi-dev libssl-dev
+
+RUN cd /tmp && git clone https://github.com/irods/irods_python_ci_utilities && \
+    cd irods_python_ci_utilities && python setup.py install 
+
+ENV IRODS_BUILD_DIRECTORY=/irods_build
+ENV IRODS_TEST_RESULTS = /irods_test_env
+
+RUN DEBIAN_FRONTEND=noninteractive &&\
+    mkdir -p $IRODS_BUILD_DIRECTORY &&\
+    chmod -R 775 $IRODS_BUILD_DIRECTORY 
+
+RUN DEBIAN_FRONTEND=noninteractive &&\
+    mkdir -p $IRODS_TEST_RESULTS &&\
+    chmod -R 775 $IRODS_TEST_RESULTS  
