@@ -10,6 +10,7 @@ services:
     volumes:
       - ./jenkins_home:/var/jenkins_home
       - ./irods_docker_files:/irods_docker_files
+      - ./jenkins_output:/jenkins_output
       - /var/run/docker.sock:/var/run/docker.sock
     secrets:
       - jenkins-user
@@ -24,3 +25,4 @@ secrets:
 volumes:
   jenkins_home:
   irods_docker_files:
+  jenkins_output:
