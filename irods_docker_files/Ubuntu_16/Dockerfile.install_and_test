@@ -1,0 +1,31 @@
+ARG base_image=ubuntu:16.04
+
+FROM $base_image
+
+RUN wget -qO - https://core-dev.irods.org/irods-core-dev-signing-key.asc | apt-key add -; \
+    echo "deb [arch=amd64] https://core-dev.irods.org/apt/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/renci-irods-core-dev.list; \
+    apt-get update &&\
+    apt-get install -y libssl-dev libfuse2 lsof rsyslog
+
+RUN pip install xmlrunner
+
+ARG database_type="postgres"
+ENV DATABASE=$database_type
+
+ARG arg_jenkins_ouput=/worm_hole_missing
+ENV JENKINS_OUTPUT=${arg_jenkins_output}
+
+ARG install_database=install_database_$DATABASE.sh
+
+ADD . /tmp
+COPY db_commands.txt /tmp/db_commands.txt
+
+RUN chmod +x /tmp/$install_database && /tmp/$install_database
+
+COPY externals.txt /tmp/externals.txt
+RUN cat /tmp/externals.txt | xargs apt-get -y install
+
+ADD install_and_test.sh /
+RUN chmod u+x /install_and_test.sh
+ENTRYPOINT ["./install_and_test.sh"]
+
