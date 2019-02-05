@@ -28,7 +28,8 @@
          }
          stage(&apos;run Tests&apos;) {
 //             sh &apos;docker run --rm --name test_ibun__issue_3571 -v $JENKINS_OUTPUT/${BUILD_TAG}:/irods_build ub16_irods_install Ubuntu_16 postgres test_iadmin.TestIadmin.test_ibun__issue_3571&apos;
-             sh &apos;docker run --rm --name test_rulebase -v $JENKINS_OUTPUT/${JOB_NAME}/${BUILD_NUMBER}:/irods_build ub16_irods_install:${BUILD_ID} Ubuntu_16 postgres test_rulebase&apos;
+             //sh &apos;docker run --rm --name test_rulebase -v $JENKINS_OUTPUT/${JOB_NAME}/${BUILD_NUMBER}:/irods_build ub16_irods_install:${BUILD_ID} Ubuntu_16 postgres test_rulebase&apos;
+             sh &apos;python run_tests_in_parallel.py --image_name ub16_irods_install:${BUILD_ID} --jenkins_output $JENKINS_OUTPUT/${JOB_NAME}/${BUILD_NUMBER} --test_name_prefix ${BUILD_TAG} --build_dir Ubuntu_16 --database_type postgres&apos;
              //sh &apos;./run_tests_in_parallel.sh --image-name ub16_irods_install:${BUILD_ID} --jenkins-output $JENKINS_OUTPUT/${JOB_NAME}/${BUILD_NUMBER} --prefix ${BUILD_TAG} --build-dir Ubuntu_16 --database-type postgres&apos;
              
          }
