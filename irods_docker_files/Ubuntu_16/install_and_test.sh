@@ -43,8 +43,8 @@ fi
 
 # Keep container running if the test fails.
 if [[ $ec != 0 ]]; then
-    tail -f /dev/null
+    #tail -f /dev/null
     # Is this better? sleep 2147483647d
     exit $ec
-fi
-
+    #return $ec
+fi 
