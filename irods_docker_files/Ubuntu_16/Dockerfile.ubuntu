@@ -3,19 +3,25 @@ ARG base_image=ubuntu:16.04
 FROM $base_image
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils && \
-    apt-get install -y apt-transport-https wget lsb-release sudo && \
+    apt-get install -y apt-transport-https wget lsb-release sudo make && \
     apt-get install -y python python-psutil python-requests python-jsonschema && \
     apt-get install -y python-pip git
 
 RUN pip install --upgrade pip
 
+RUN wget -qO - https://core-dev.irods.org/irods-core-dev-signing-key.asc | apt-key add -; \
+    echo "deb [arch=amd64] https://core-dev.irods.org/apt/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/renci-irods-core-dev.list; \
+    apt-get clean &&\
+    apt-get update &&\
+    apt-get install -y libssl-dev libfuse2 lsof rsyslog gdebi vim
+
 #RUN pip install pyOpenSSl ndg-httpsclient pyasn1 libffi-dev libssl-dev
 
-RUN cd /tmp && git clone https://github.com/irods/irods_python_ci_utilities && \
+RUN cd /tmp && git clone -b dockerize https://github.com/jassigill2000/irods_python_ci_utilities && \
     cd irods_python_ci_utilities && python setup.py install 
 
 ENV IRODS_BUILD_DIRECTORY=/irods_build
-ENV IRODS_TEST_RESULTS = /irods_test_env
+ENV IRODS_TEST_RESULTS=/irods_test_env
 
 RUN DEBIAN_FRONTEND=noninteractive &&\
     mkdir -p $IRODS_BUILD_DIRECTORY &&\
