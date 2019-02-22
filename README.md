@@ -16,8 +16,10 @@ Clone the repository, change directory, and build the docker image.
 ```
 git clone https://github.com/irods/irods_testing_jenkins
 cd irods_testing_jenkins
-docker build -t irods-jenkins -f Dockerfile.jenkins .
+docker build -t irods-jenkins --build-arg arg_jenkins_output=/jenkins_output -f Dockerfile.jenkins .
 ```
+
+Make sure that you enter the full path for arg_jenkins_output 
 
 ## Docker Swarm
 
