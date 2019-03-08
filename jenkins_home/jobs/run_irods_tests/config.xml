@@ -1,0 +1,64 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.31">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.29">
+      <autoRebuild>false</autoRebuild>
+      <rebuildDisabled>false</rebuildDisabled>
+    </com.sonyericsson.rebuild.RebuildSettings>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_PLATFORM_TARGETS</name>
+          <description>ubuntu_16,centos_7</description>
+          <defaultValue>ubuntu_16,centos_7</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_PARENT_JOB_ID</name>
+          <description>Pass the parent job id </description>
+          <defaultValue></defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_IRODS_BUILD_DIR</name>
+          <description></description>
+          <defaultValue></defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.62">
+    <script>node {
+     def build_id = env.BUILD_ID
+     if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
+         build_id = PARAMETER_PARENT_JOB_ID
+     }
+     print(build_id)
+     def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + build_id
+     def dockerfile_dir = env.GLOBAL_PARAMETER_DOCKER_REPO
+     dir(dockerfile_dir) {
+         stage(&apos;Install And Run Tests&apos;) {
+             def base_os = PARAMETER_PLATFORM_TARGETS.split(&apos;,&apos;)
+             def parallelBranches = [:]
+             for(int i = 0; i &lt; base_os.size(); i++) {
+                def os = base_os[i]
+                def run_cmd = &apos;python run_irods_tests.py -p &apos; + os + &apos; -b &apos; + build_id + &apos; --test_name_prefix ${BUILD_TAG} --build_dir &apos; + PARAMETER_IRODS_BUILD_DIR +&apos; -o &apos; + output_directory
+                parallelBranches[&quot;${os}&quot;] = {
+                    sh run_cmd 
+                }
+             }
+             if (parallelBranches.size() != 0) {
+                 parallel(parallelBranches)
+             }
+         }
+     }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
