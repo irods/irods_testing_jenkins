@@ -62,8 +62,8 @@ def run_test(test_name, output_root_directory):
         rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'cd scripts; python2 run_tests.py --xml_output --run_s={0} 2>&1 | tee {1}; exit $PIPESTATUS'.format(test_name, test_output_file)])
         return rc
     finally:
-        #output_root_directory = '/irods_test_env/{0}'.format(test_name)
-        output_directory = output_root_directory + '/' + test_name
+        output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(),test_name)
+        #output_directory = output_root_directory + '/' + test_name
         irods_python_ci_utilities.gather_files_satisfying_predicate('/var/lib/irods/log', output_directory, lambda x: True)
         shutil.copy('/var/lib/irods/log/test_output.log', output_directory)
  
