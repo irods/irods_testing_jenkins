@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.31">
+<flow-definition plugin="workflow-job@2.32">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -40,13 +40,25 @@
           <defaultValue>ubuntu_16,centos_7</defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_PLUGIN_TESTS</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_DATABASE_TYPE</name>
+          <description></description>
+          <defaultValue>postgres</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.62">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.64">
     <script>node {
     def job_number = env.BUILD_ID
     def buildOutputDirectory = env.JENKINS_OUTPUT + &apos;/build_irods_on_base/&apos; + job_number
+    def parallelTests = [:]
     stage(&quot;Build Base OS&quot;) {
         b = build job: &quot;build_base_os&quot;,
             parameters: [
@@ -64,19 +76,39 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_ICOMMANDS_REPO&apos;, value: PARAMETER_IRODS_ICOMMANDS_REPO],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_ICOMMANDS_COMMITISH&apos;, value: PARAMETER_IRODS_ICOMMANDS_COMMITISH]
             ]
-        print(buildOutputDirectory)
     }
-    stage(&quot;Install and Run iRODS Tests&quot;) {
-        print(buildOutputDirectory)
-        print(job_number)
-        build job: &quot;run_irods_tests&quot;, 
+    parallelTests[&quot;Install and Run iRODS Core Tests&quot;] = {
+        stage(&quot;Install and Run iRODS Core Tests&quot;) {
+            build job: &quot;run_irods_tests&quot;, 
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: job_number],
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory]
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
             ]
+        }    
     }
-}</script>
+    if(PARAMETER_RUN_PLUGIN_TESTS == &quot;true&quot;) {
+        parallelTests[&quot;Install and Run Plugin Tests&quot;] = {
+            stage(&quot;Install and Run Plugin Tests&quot;) {
+                echo &quot;Stage2 Install and Run Plugin Tests&quot;
+                build job:&quot;curl-plugin-build-and-test-workflow&quot;,
+                parameters: [
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: job_number],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_REPO&apos;, value:&apos;https://github.com/irods/irods_microservice_plugins_curl.git&apos;],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: &apos;4-2-stable&apos;],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
+                ]
+            }  
+        }
+    }
+    stage(&apos;Install and Run All Tests&apos;) {                                                                           
+        parallel(parallelTests)
+    }
+}
+</script>
     <sandbox>true</sandbox>
   </definition>
   <triggers/>
