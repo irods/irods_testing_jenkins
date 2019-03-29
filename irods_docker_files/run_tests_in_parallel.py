@@ -37,7 +37,7 @@ def main():
         results_mount = jenkins_output + ':/irods_test_env'
 
         #cmd = ['docker', 'run', '--name', test_name, '-v', volume_mount, image_name, build_dir, database_type, test]
-        cmd = ['docker', 'run', '--privileged', '--name', test_name, '-v', build_mount, '-v', results_mount, image_name, '-d', database_type, '-t', test]
+        cmd = ['docker', 'run', '--privileged', '--name', test_name, '-v', build_mount, '-v', results_mount, image_name, '--database_type', database_type, '-t', test]
         docker_run_list.append(cmd)
     
     print(docker_run_list)  
