@@ -1,0 +1,77 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.32">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.29">
+      <autoRebuild>false</autoRebuild>
+      <rebuildDisabled>false</rebuildDisabled>
+    </com.sonyericsson.rebuild.RebuildSettings>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_PLATFORM_TARGETS</name>
+          <description>ubuntu_16,centos_7</description>
+          <defaultValue>ubuntu_16,centos_7</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_PARENT_JOB_ID</name>
+          <description>this is either the job id or the tag for the base os images</description>
+          <defaultValue></defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_PLUGIN_GIT_REPO</name>
+          <description></description>
+          <defaultValue>https://github.com/irods/irods_microservice_plugins_curl</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_PLUGIN_GIT_COMMITISH</name>
+          <description></description>
+          <defaultValue>master</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_IRODS_BUILD_DIR</name>
+          <description>Directory of irods core packages</description>
+          <defaultValue></defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.64">
+    <script>node {
+     def build_id = env.BUILD_ID
+     if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
+         build_id = PARAMETER_PARENT_JOB_ID
+     }
+     def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + build_id
+     def dockerfile_dir = env.GLOBAL_PARAMETER_DOCKER_REPO
+     print(dockerfile_dir)
+     dir(dockerfile_dir) {
+         stage(&apos;iRODS Build&apos;) {
+             def base_os = PARAMETER_PLATFORM_TARGETS.split(&apos;,&apos;)
+             def parallelBranches = [:]
+             for(int i = 0; i &lt; base_os.size(); i++) {
+                def os = base_os[i]
+                def build_cmd = &apos;python build_plugin_wrapper.py --platform_target &apos; + os + &apos; --build_id &apos; + build_id + &apos; --plugin_repo &apos; + PARAMETER_PLUGIN_GIT_REPO + &apos; --plugin_commitish &apos; + PARAMETER_PLUGIN_GIT_COMMITISH + &apos; --irods_packages_build_directory &apos; + PARAMETER_IRODS_BUILD_DIR +&apos; --output_directory &apos; + output_directory
+                def branchName = os.split(&apos;:&apos;)[0]
+                parallelBranches[&quot;${branchName}&quot;] = {
+                    sh build_cmd 
+                }
+             }
+             if (parallelBranches.size() != 0) {
+                 parallel(parallelBranches)
+             }
+         }
+     }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
