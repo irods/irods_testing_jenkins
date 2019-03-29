@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.31">
+<flow-definition plugin="workflow-job@2.32">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -28,10 +28,16 @@
           <defaultValue></defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_DATABASE_TYPE</name>
+          <description></description>
+          <defaultValue></defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.62">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.64">
     <script>node {
      def build_id = env.BUILD_ID
      if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
@@ -46,7 +52,7 @@
              def parallelBranches = [:]
              for(int i = 0; i &lt; base_os.size(); i++) {
                 def os = base_os[i]
-                def run_cmd = &apos;python run_irods_tests.py -p &apos; + os + &apos; -b &apos; + build_id + &apos; --test_name_prefix ${BUILD_TAG} --build_dir &apos; + PARAMETER_IRODS_BUILD_DIR +&apos; -o &apos; + output_directory
+                def run_cmd = &apos;python run_tests.py -p &apos; + os + &apos; -b &apos; + build_id + &apos; --test_name_prefix ${BUILD_TAG} --irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR +&apos; -o &apos; + output_directory + &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE
                 parallelBranches[&quot;${os}&quot;] = {
                     sh run_cmd 
                 }
