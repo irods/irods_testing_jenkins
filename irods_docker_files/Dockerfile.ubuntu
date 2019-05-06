@@ -3,11 +3,19 @@ ARG base_image=ubuntu:16.04
 FROM $base_image
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils && \
-    apt-get install -y apt-transport-https wget lsb-release sudo make && \
+    apt-get install -y apt-transport-https wget lsb-release sudo make  netcat && \
     apt-get install -y python python-psutil python-requests python-jsonschema && \
-    apt-get install -y python-pip git
+    apt-get install -y python-pip git &&\
+    pip install docker
 
 RUN pip install --upgrade pip
+
+RUN apt-get install -y ca-certificates curl gnupg-agent software-properties-common &&\
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - &&\
+    apt-key fingerprint 0EBFCD88 && \
+    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" && \
+    apt-get update -qq && \
+    apt-get install -qqy docker-ce
 
 RUN wget -qO - https://core-dev.irods.org/irods-core-dev-signing-key.asc | apt-key add -; \
     echo "deb [arch=amd64] https://core-dev.irods.org/apt/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/renci-irods-core-dev.list; \

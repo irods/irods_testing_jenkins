@@ -38,11 +38,14 @@ def configure_database(database):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--database_type', default='postgres', help='database type', required=True)
+    parser.add_argument('--install_database', default='True')
     args = parser.parse_args()
 
     database_type = args.database_type
-    install_database(database_type)
-    configure_database(database_type)
+    print('lets try installing a database ', args.install_database)    
+    if args.install_database == 'True':
+        install_database(database_type)
+        configure_database(database_type)
     
 if __name__ == '__main__':
     main()
