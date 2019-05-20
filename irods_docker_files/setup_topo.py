@@ -79,11 +79,6 @@ def connect_to_network(machine_name, alias_name, network_name):
     network_cmd = ['docker', 'network', 'connect', '--alias', alias_name, network_name, machine_name]
     proc = Popen(network_cmd, stdout=PIPE, stderr=PIPE)
     _out, _err = proc.communicate()
-    print('stderr ' , _err)
-    #cmd = ['docker', 'network', 'connect', 'bridge', machine_name]
-    #p = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
-    #out, err = p.communicate()
-    #print('stderr ', err)
     
 def run_tests(test_type, test_name):
     print("let's try to run tests")

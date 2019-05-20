@@ -12,6 +12,7 @@ def install_database(database):
     distribution = irods_python_ci_utilities.get_distribution()
     if database == 'postgres':
         if distribution == 'Ubuntu':
+            irods_python_ci_utilities.subprocess_get_output(['apt-get', 'update'], check_rc=True)
             irods_python_ci_utilities.install_os_packages(['postgresql', 'postgresql-contrib', 'odbc-postgresql', 'unixodbc', 'super'])
             start_db = subprocess.Popen(['service', 'postgresql', 'start'])
             start_db.wait()

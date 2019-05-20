@@ -96,10 +96,11 @@ def check_topo_state(machine_list, network_name):
                 exit_code = ['docker', 'inspect', '--format', '{{.State.ExitCode}}', machine_name]
                 ec_proc = Popen(exit_code, stdout=PIPE, stderr=PIPE)
                 _out, _err = ec_proc.communicate()
-                p = Popen(['docker', 'rm', machine_name], stdout=PIPE, stderr=PIPE)
-                p.wait()
                 if not _out == "0\n":
                     exit_codes.append(_out)
+                else:
+                    p = Popen(['docker', 'rm', machine_name], stdout=PIPE, stderr=PIPE)
+                    p.wait()
     
     rm_network = Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE)
     rm_network.wait()
