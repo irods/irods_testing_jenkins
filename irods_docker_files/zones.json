@@ -1,0 +1,30 @@
+{
+  "tempZone": {
+    "federation": [
+      {
+        "catalog_provider_hosts": [
+          "icat.otherZone.example.org"
+        ],
+        "icat_host": "icat.otherZone.example.org",
+        "negotiation_key": "32_byte_server_negotiation_key__",
+        "zone_key": "TEMPORARY_ZONE_KEY",
+        "zone_name": "otherZone",
+        "zone_port": 1247
+      }
+    ]
+  },
+  "otherZone": {
+    "federation": [
+      {
+        "catalog_provider_hosts": [
+          "icat.tempZone.example.org"
+        ],
+        "icat_host": "icat.tempZone.example.org",
+        "negotiation_key": "32_byte_server_negotiation_key__",
+        "zone_key": "TEMPORARY_ZONE_KEY",
+        "zone_name": "tempZone",
+        "zone_port": 1247
+      }
+    ]
+  }
+}

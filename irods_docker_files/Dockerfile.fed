@@ -1,0 +1,33 @@
+ARG base_image=ubuntu:16.04
+
+FROM $base_image
+
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+
+RUN pip install xmlrunner
+
+ARG arg_database_type="postgres"
+ENV DATABASE=$arg_database_type
+
+ARG arg_jenkins_ouput=/worm_hole_missing
+ENV JENKINS_OUTPUT=${arg_jenkins_output}
+
+ADD install_database.py /
+RUN chmod u+x /install_database.py
+RUN python /install_database.py -d $DATABASE
+
+COPY install_externals.py /tmp/install_externals.py
+RUN cd tmp && python install_externals.py
+
+COPY other_zone.input /tmp/other_zone.input
+COPY zones.json /tmp/zones.json
+COPY get_irods_version.py /
+
+ADD run_tests_in_zone.py /
+RUN chmod u+x /run_tests_in_zone.py
+
+ADD setup_fed_and_test.py /
+RUN chmod u+x /setup_fed_and_test.py
+ENTRYPOINT ["python","setup_fed_and_test.py"]
+
