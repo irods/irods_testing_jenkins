@@ -25,11 +25,11 @@ def run_tests(image_name, build_dir, output_directory, database_type, test_name_
     run_tests_cmd = ['python run_tests_in_parallel.py --image_name {0} --jenkins_output {1} --test_name_prefix {2} -b {3} --database_type {4}'.format(image_name, output_directory, test_name_prefix, build_dir, database_type)]
     run_tests_p = subprocess.check_call(run_tests_cmd, shell=True)
 
-def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo, plugin_commitish, passthru_args, output_directory, database_type, test_name):
+def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo, plugin_commitish, passthru_args, output_directory, database_type, machine_name):
     build_mount = irods_build_dir + ':/irods_build'
     results_mount = output_directory + ':/irods_test_env'
     plugin_mount = plugin_build_dir + ':/plugin_mount_dir'
-    run_cmd = ['docker run --rm --name {0} -v {1} -v {2} -v {3} {4} --test_plugin --database_type {5} --plugin_repo {6} --plugin_commitish {7} --passthrough_arguments {8}'.format(test_name, build_mount, plugin_mount, results_mount, image_name, database_type, plugin_repo, plugin_commitish, passthru_args)]
+    run_cmd = ['docker run --rm --name {0} -v {1} -v {2} -v {3} {4} --test_plugin --database_type {5} --plugin_repo {6} --plugin_commitish {7} --passthrough_arguments {8}'.format(machine_name, build_mount, plugin_mount, results_mount, image_name, database_type, plugin_repo, plugin_commitish, passthru_args)]
     print(run_cmd)
     run_tests = subprocess.check_call(run_cmd, shell=True)
 
@@ -58,7 +58,6 @@ def main():
         
     install_irods(build_tag, base_image)
     test_name_prefix = args.platform_target + '-' + args.test_name_prefix
-    print('test plugin -- ', args.test_plugin)
     if not args.test_plugin:
         run_tests(build_tag, args.irods_build_dir, args.output_directory, args.database_type, test_name_prefix)
     else:
@@ -66,10 +65,8 @@ def main():
         plugin_repo_split = plugin_repo.split('/')
         plugin = plugin_repo_split[len(plugin_repo_split) - 1]
         plugin_name = plugin.split('.git')[0]
-        print('passthru args --- ', args.passthrough_arguments)
-        test_name = args.platform_target + '-' + plugin_name + '-' + args.build_id 
-        run_plugin_tests(build_tag, args.irods_build_dir, args.plugin_build_dir, args.plugin_repo, args.plugin_commitish, args.passthrough_arguments, args.output_directory, args.database_type, test_name)
+        machine_name = args.platform_target + '-' + plugin_name + '-' + args.build_id 
+        run_plugin_tests(build_tag, args.irods_build_dir, args.plugin_build_dir, args.plugin_repo, args.plugin_commitish, args.passthrough_arguments, args.output_directory, args.database_type, machine_name)
 
 if __name__ == '__main__':
     main()
-

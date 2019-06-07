@@ -7,14 +7,19 @@ import argparse
 import subprocess
 
 def build_plugins_in_containers(base_os, build_id, plugin_repo, plugin_commitish, irods_packages_directory, output_directory):
-    build_tag = base_os +'-plugin-build:' + build_id
+    _git_repo = plugin_repo.split('/')
+    plugin_name = _git_repo[len(_git_repo) - 1]
+
+    build_tag = base_os + '-' + plugin_name +'-build:' + build_id
     print(build_tag)
     base_image = base_os + ':' + build_id 
-    #docker build -t plugin_test --build-arg base_image=ubuntu_16:2 -f Dockerfile.build_plugin .
     docker_cmd = ['docker build -t {0} --build-arg base_image={1} --build-arg arg_plugin_repo={2} --build-arg arg_plugin_commitish={3} -f Dockerfile.build_plugin .'.format(build_tag, base_image, plugin_repo, plugin_commitish)] 
     print(docker_cmd)
     run_build = subprocess.check_call(docker_cmd, shell=True)
-    save_plugin_build(build_tag, irods_packages_directory, output_directory)
+    _git_repo = plugin_repo.split('/')
+    plugin_name = _git_repo[len(_git_repo) - 1]
+    plugin_build_dir = '/{0}/{1}'.format(output_directory, plugin_name)
+    save_plugin_build(build_tag, irods_packages_directory, plugin_build_dir)
 
 def save_plugin_build(image_name, irods_packages_directory, output_directory):
     save_cmd = ['docker run --rm -v {0}:/irods_build -v {1}:/plugin_build_output {2} -o /plugin_build_output -b /irods_build'.format(irods_packages_directory, output_directory, image_name)] 

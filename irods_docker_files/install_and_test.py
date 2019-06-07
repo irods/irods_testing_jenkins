@@ -57,9 +57,13 @@ def setup_irods(database_type):
         p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
 
 def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arguments):
+    if irods_python_ci_utilities.get_distribution() == 'Ubuntu':
+        irods_python_ci_utilities.subprocess_get_output(['apt-get', 'update'], check_rc=True)
+    _git_repo = git_repo.split('/')
+    plugin_name = _git_repo[len(_git_repo) - 1]
     git_checkout_dir = irods_python_ci_utilities.git_clone(git_repo, git_commitish)
-    output_directory = '/irods_test_env/{0}'.format(irods_python_ci_utilities.get_irods_platform_string())
-    plugin_build_dir = '/plugin_mount_dir'
+    output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(), plugin_name)
+    plugin_build_dir = '/plugin_mount_dir/{0}'.format(plugin_name)
     python_script = 'irods_consortium_continuous_integration_test_hook.py'
     return irods_python_ci_utilities.subprocess_get_output(['python', python_script, '--output_root_directory', output_directory, '--built_packages_root_directory', plugin_build_dir] + passthrough_arguments, cwd=git_checkout_dir, check_rc=True)
 
@@ -78,23 +82,19 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test_plugin', action='store_true', default=False)
     parser.add_argument('-d', '--database_type', default='postgres', help='database type', required=True)
-    parser.add_argument('-t', '--test_name', default=None, help='test name')
+    parser.add_argument('-t', '--test_name', default=None, help='test name or the plugin name')
     parser.add_argument('--plugin_repo', default='https://github.com/irods/irods_microservice_plugins_curl.git', help='plugin repo')
     parser.add_argument('--plugin_commitish', default='4-2-stable', help='plugin commitish')
     parser.add_argument('--passthrough_arguments', default=[], nargs=argparse.REMAINDER)
 
     args = parser.parse_args()
-    print('-d ', args.database_type)
     install_and_setup(args.database_type)
     start_database(args.database_type)
     setup_irods(args.database_type)
     test_name = args.test_name
-    print('test_name ', test_name)
-    print('test_plugin ', args.test_plugin)
     
     if not args.test_plugin:    
         rc = run_test(args.test_name, get_irods_packages_directory())
-        print("return code ", rc)
         sys.exit(rc)
     else:
         rc, stdout, stderr = checkout_git_repo_and_run_test_hook(args.plugin_repo, args.plugin_commitish, args.passthrough_arguments)

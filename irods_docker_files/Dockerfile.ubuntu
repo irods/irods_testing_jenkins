@@ -24,6 +24,7 @@ RUN wget -qO - https://core-dev.irods.org/irods-core-dev-signing-key.asc | apt-k
     apt-get install -y libssl-dev libfuse2 lsof rsyslog gdebi vim
 
 #RUN pip install pyOpenSSl ndg-httpsclient pyasn1 libffi-dev libssl-dev
+RUN apt-get update
 
 RUN cd /tmp && git clone -b dockerize https://github.com/jassigill2000/irods_python_ci_utilities && \
     cd irods_python_ci_utilities && python setup.py install 
@@ -37,4 +38,4 @@ RUN DEBIAN_FRONTEND=noninteractive &&\
 
 RUN DEBIAN_FRONTEND=noninteractive &&\
     mkdir -p $IRODS_TEST_RESULTS &&\
-    chmod -R 775 $IRODS_TEST_RESULTS  
+    chmod -R 775 $IRODS_TEST_RESULTS 

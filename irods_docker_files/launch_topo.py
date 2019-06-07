@@ -72,9 +72,9 @@ def create_topology(provider_tag, consumer_tag_list, network_name, test_name_pre
         machine_list.append(consumer_name)
         resource_name = 'resource' + str(i) + '.example.org'
         if test_type == 'topology_resource' and i == 1:
-            consumer_cmd = ['docker', 'run', '--name', consumer_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '-h', resource_name, consumer_tag, '--database_type', database_type, '--is_consumer', '--consumer_name', consumer_name, '--provider_name', provider_name, '--test_type', test_type, '--test_name', test_name, '--network_name', network_name, '--alias_name', resource_name]
+            consumer_cmd = ['docker', 'run', '-d', '--name', consumer_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '-h', resource_name, consumer_tag, '--database_type', database_type, '--is_consumer', '--consumer_name', consumer_name, '--provider_name', provider_name, '--test_type', test_type, '--test_name', test_name, '--network_name', network_name, '--alias_name', resource_name]
         else:
-            consumer_cmd = ['docker', 'run', '--name', consumer_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '-h', resource_name, consumer_tag, '--database_type', database_type, '--is_consumer', '--consumer_name', consumer_name, '--provider_name', provider_name, '--network_name', network_name, '--alias_name', resource_name]
+            consumer_cmd = ['docker', 'run', '-d', '--name', consumer_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '-h', resource_name, consumer_tag, '--database_type', database_type, '--is_consumer', '--consumer_name', consumer_name, '--provider_name', provider_name, '--network_name', network_name, '--alias_name', resource_name]
 
         docker_run_list.append(consumer_cmd)
         print(consumer_cmd)
@@ -100,7 +100,7 @@ def check_topo_state(machine_list, network_name):
                     exit_codes.append(_out)
                 else:
                     p = Popen(['docker', 'rm', machine_name], stdout=PIPE, stderr=PIPE)
-                    p.wait()
+                    p.communicate()
     
     rm_network = Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE)
     rm_network.wait()
