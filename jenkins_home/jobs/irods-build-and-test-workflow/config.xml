@@ -45,11 +45,21 @@
           <description></description>
           <defaultValue>true</defaultValue>
         </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_FEDERATION_TESTS</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_TOPOLOGY_TESTS</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>PARAMETER_DATABASE_TYPE</name>
           <description></description>
           <defaultValue>postgres</defaultValue>
-          <trim>false</trim>
+          <trim>true</trim>
         </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
@@ -92,16 +102,43 @@
         parallelTests[&quot;Install and Run Plugin Tests&quot;] = {
             stage(&quot;Install and Run Plugin Tests&quot;) {
                 echo &quot;Stage2 Install and Run Plugin Tests&quot;
-                build job:&quot;curl-plugin-build-and-test-workflow&quot;,
+                build job:&quot;all_plugins_build_and_test_workflow&quot;,
                 parameters: [
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: job_number],
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
-                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_REPO&apos;, value:&apos;https://github.com/irods/irods_microservice_plugins_curl.git&apos;],
-                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: &apos;4-2-stable&apos;],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
                 ]
             }  
+        }
+    }
+    if(PARAMETER_RUN_TOPOLOGY_TESTS == &quot;true&quot;) {
+        parallelTests[&quot;Install and Run Topology Tests&quot;] = {
+            stage(&quot;Install and Run Topology Tests&quot;) {
+                build job:&quot;run_tests_on_topology&quot;,
+                parameters: [
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: job_number],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_SPECIFIC_TEST&apos;, value: &apos;test_resource_types.Test_Resource_Replication.test_open_write_close_for_repl__3909&apos;]
+                ]
+            }
+        }
+    }
+    if(PARAMETER_RUN_FEDERATION_TESTS == &quot;true&quot;) {
+        parallelTests[&quot;Install and Run Federation Tests&quot;] = {
+            stage(&quot;Install and Run Federation Tests&quot;) {
+                build job:&quot;run_tests_on_federation&quot;,
+                parameters: [
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: job_number],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_SPECIFIC_TEST&apos;, value: &apos;test_federation.Test_ICommands.test_ils_l&apos;]
+                ]
+            }
         }
     }
     stage(&apos;Install and Run All Tests&apos;) {                                                                           
