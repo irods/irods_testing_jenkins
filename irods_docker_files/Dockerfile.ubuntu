@@ -1,11 +1,10 @@
 ARG base_image=ubuntu:16.04
-
 FROM $base_image
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils && \
     apt-get install -y apt-transport-https wget lsb-release sudo make  netcat && \
     apt-get install -y python python-psutil python-requests python-jsonschema && \
-    apt-get install -y python-pip git &&\
+    apt-get install -y python-pip git net-tools && \
     pip install docker
 
 RUN pip install --upgrade pip
@@ -24,6 +23,9 @@ RUN wget -qO - https://core-dev.irods.org/irods-core-dev-signing-key.asc | apt-k
     apt-get install -y libssl-dev libfuse2 lsof rsyslog gdebi vim
 
 #RUN pip install pyOpenSSl ndg-httpsclient pyasn1 libffi-dev libssl-dev
+RUN apt-get install -y libffi-dev libssl-dev
+RUN python -m easy_install --upgrade pyOpenSSL
+RUN python -m easy_install --upgrade cryptography
 RUN apt-get update
 
 RUN cd /tmp && git clone -b dockerize https://github.com/jassigill2000/irods_python_ci_utilities && \

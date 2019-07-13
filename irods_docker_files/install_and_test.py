@@ -54,7 +54,7 @@ def start_database(database_type):
 
 def setup_irods(database_type):
     if database_type == 'postgres':
-        p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
+        subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
 
 def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arguments):
     if irods_python_ci_utilities.get_distribution() == 'Ubuntu':

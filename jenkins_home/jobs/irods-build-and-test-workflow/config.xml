@@ -1,10 +1,10 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.32">
+<flow-definition plugin="workflow-job@2.33">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.29">
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.31">
       <autoRebuild>false</autoRebuild>
       <rebuildDisabled>false</rebuildDisabled>
     </com.sonyericsson.rebuild.RebuildSettings>
@@ -64,7 +64,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.64">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.72">
     <script>node {
     def job_number = env.BUILD_ID
     def buildOutputDirectory = env.JENKINS_OUTPUT + &apos;/build_irods_on_base/&apos; + job_number
@@ -94,7 +94,9 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: job_number],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_REPO&apos;, value: PARAMETER_IRODS_REPO],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH]
             ]
         }    
     }
