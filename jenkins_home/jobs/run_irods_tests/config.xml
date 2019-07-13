@@ -1,10 +1,10 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.32">
+<flow-definition plugin="workflow-job@2.33">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.29">
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.31">
       <autoRebuild>false</autoRebuild>
       <rebuildDisabled>false</rebuildDisabled>
     </com.sonyericsson.rebuild.RebuildSettings>
@@ -34,10 +34,22 @@
           <defaultValue></defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_IRODS_REPO</name>
+          <description></description>
+          <defaultValue>https://github.com/irods/irods</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_IRODS_COMMITISH</name>
+          <description></description>
+          <defaultValue>master</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.64">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.72">
     <script>node {
      def build_id = env.BUILD_ID
      if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
@@ -52,7 +64,7 @@
              def parallelBranches = [:]
              for(int i = 0; i &lt; base_os.size(); i++) {
                 def os = base_os[i]
-                def run_cmd = &apos;python run_tests.py -p &apos; + os + &apos; -b &apos; + build_id + &apos; --test_name_prefix ${BUILD_TAG} --irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR +&apos; -o &apos; + output_directory + &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE
+                def run_cmd = &apos;python run_tests.py -p &apos; + os + &apos; -b &apos; + build_id + &apos; --test_name_prefix ${BUILD_TAG} --irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR +&apos; -o &apos; + output_directory + &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE + &apos; --irods_repo &apos; + PARAMETER_IRODS_REPO + &apos; --irods_commitish &apos; + PARAMETER_IRODS_COMMITISH
                 parallelBranches[&quot;${os}&quot;] = {
                     sh run_cmd 
                 }

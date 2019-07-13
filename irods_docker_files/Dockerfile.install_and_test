@@ -1,8 +1,5 @@
 ARG base_image=ubuntu:16.04
-
 FROM $base_image
-
-RUN pip install xmlrunner
 
 ARG database_type="postgres"
 ENV DATABASE=$database_type
@@ -10,12 +7,17 @@ ENV DATABASE=$database_type
 ARG arg_jenkins_ouput=/worm_hole_missing
 ENV JENKINS_OUTPUT=${arg_jenkins_output}
 
+RUN pip install xmlrunner
+
 ADD install_database.py /
 RUN chmod u+x /install_database.py
 RUN python /install_database.py -d $DATABASE
 
 COPY install_externals.py /tmp/install_externals.py
 RUN cd tmp && python install_externals.py
+
+RUN echo export IRODS_ENABLE_TEST_MODE="1" > /etc/profile.d/irods.sh
+RUN chmod 644 /etc/profile.d/irods.sh
 
 ADD install_and_test.py /
 RUN chmod u+x /install_and_test.py

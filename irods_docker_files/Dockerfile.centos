@@ -1,13 +1,39 @@
+#
+# Centos 7 System-D Enabled Image
+#
 ARG base_image=centos:7
+FROM $base_image as centos_systemd
 
-FROM $base_image
+ENV container docker
+
+RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == \
+systemd-tmpfiles-setup.service ] || rm -f $i; done); \
+rm -f /lib/systemd/system/multi-user.target.wants/*;\
+rm -f /etc/systemd/system/*.wants/*;\
+rm -f /lib/systemd/system/local-fs.target.wants/*; \
+rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+rm -f /lib/systemd/system/basic.target.wants/*;\
+rm -f /lib/systemd/system/anaconda.target.wants/*;
+
+VOLUME ["/sys/fs/cgroup"]
+
+CMD ["/usr/sbin/init"]
+
+
+
+#
+# iRODS Centos Base Image
+#
+FROM centos_systemd
 
 RUN yum -y update && yum clean all &&\
     yum -y install epel-release sudo vim wget rpm-build make cmake3 gcc-c++ nmap-ncat && yum clean all &&\
     yum -y install python python-psutil python-requests python-jsonschema &&\ 
-    yum -y install python-pip git && yum clean all
+    yum -y install python-pip git net-tools && \
+    yum clean all
 
-RUN yum -y install yum-utils device-mapper-persistent-data lvm2 
+RUN yum -y install yum-utils device-mapper-persistent-data lvm2 rsyslog
 
 RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
@@ -15,10 +41,10 @@ RUN yum -y install docker-ce docker-ce-cli containerd.io
 
 RUN pip install --upgrade pip
 
-COPY rsyslog-irods.conf /etc/rsyslog.d/00-irods.conf
+#COPY rsyslog-irods.conf /etc/rsyslog.d/00-irods.conf
 
-RUN yum -y update && yum clean all &&\
-    yum -y install rsyslog
+#RUN yum -y update && yum clean all &&\
+#    yum -y install rsyslog
 
 RUN yum -y install initscripts && yum clean all
 
