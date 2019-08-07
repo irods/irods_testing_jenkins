@@ -46,6 +46,12 @@
           <defaultValue>master</defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_TEST_PARALLELISM</name>
+          <description>The number of tests to run in parallel per OS/Database flavor.</description>
+          <defaultValue>4</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
@@ -64,7 +70,15 @@
              def parallelBranches = [:]
              for(int i = 0; i &lt; base_os.size(); i++) {
                 def os = base_os[i]
-                def run_cmd = &apos;python run_tests.py -p &apos; + os + &apos; -b &apos; + build_id + &apos; --test_name_prefix ${BUILD_TAG} --irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR +&apos; -o &apos; + output_directory + &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE + &apos; --irods_repo &apos; + PARAMETER_IRODS_REPO + &apos; --irods_commitish &apos; + PARAMETER_IRODS_COMMITISH
+                def run_cmd = &apos;python run_tests.py -p &apos; + os +
+                                                 &apos; -b &apos; + build_id +
+                                                 &apos; --test_name_prefix ${BUILD_TAG} &apos; +
+                                                 &apos;--irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR +
+                                                 &apos; -o &apos; + output_directory +
+                                                 &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE +
+                                                 &apos; --irods_repo &apos; + PARAMETER_IRODS_REPO +
+                                                 &apos; --irods_commitish &apos; + PARAMETER_IRODS_COMMITISH +
+                                                 &apos; --test_parallelism &apos; + PARAMETER_TEST_PARALLELISM
                 parallelBranches[&quot;${os}&quot;] = {
                     sh run_cmd 
                 }
