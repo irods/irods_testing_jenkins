@@ -34,6 +34,7 @@ def main():
     parser.add_argument('-d', '--database_type', default='postgres', help='database type', required=True)
     parser.add_argument('--irods_repo', type=str, required=True)
     parser.add_argument('--irods_commitish', type=str, required=True)
+    parser.add_argument('--test_parallelism', type=str, default='4', required=True)
     args = parser.parse_args()
 
     build_mount = args.build_dir + ':/irods_build'
@@ -57,7 +58,7 @@ def main():
     
     print(docker_run_list)  
 
-    pool = Pool(processes=4) # TODO This should be an option when launching the tests.
+    pool = Pool(processes=int(args.test_parallelism))
     containers = [{'test_name': cmd['test_name'], 'proc': pool.apply_async(run_command_in_container, (cmd['command'],))} for cmd in docker_run_list]
     container_error_codes = [{'test_name': c['test_name'], 'error_code': c['proc'].get()} for c in containers]
 
