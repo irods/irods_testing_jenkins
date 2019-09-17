@@ -28,7 +28,7 @@ CMD ["/usr/sbin/init"]
 FROM centos_systemd
 
 RUN yum -y update && yum clean all &&\
-    yum -y install epel-release sudo vim wget rpm-build make cmake3 gcc-c++ nmap-ncat && yum clean all &&\
+    yum -y install epel-release sudo vim wget zip rpm-build make cmake3 gcc-c++ nmap-ncat && yum clean all &&\
     yum -y install python python-psutil python-requests python-jsonschema &&\ 
     yum -y install python-pip git net-tools && \
     yum clean all
