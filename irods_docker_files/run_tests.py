@@ -61,6 +61,7 @@ def main():
         
     install_irods(build_tag, base_image)
     test_name_prefix = args.platform_target + '-' + args.test_name_prefix
+
     if not args.test_plugin:
         run_tests(build_tag, args.irods_repo, args.irods_commitish, args.irods_build_dir, args.output_directory, args.database_type, args.test_parallelism, test_name_prefix)
     else:
