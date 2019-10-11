@@ -13,7 +13,7 @@ from subprocess import PIPE
 def get_irods_packages_directory():
     return '/irods_build/' + irods_python_ci_utilities.get_irods_platform_string()
 
-def install_and_setup(database_type):
+def install_irods_packages(database_type):
     irods_packages_directory = get_irods_packages_directory()
     if os.path.exists(irods_packages_directory):
         icat_package_basename = filter(lambda x:'irods-server' in x, os.listdir(irods_packages_directory))[0]
@@ -78,6 +78,20 @@ def run_test(test_name, output_root_directory):
         irods_python_ci_utilities.gather_files_satisfying_predicate('/var/lib/irods/log', output_directory, lambda x: True)
         shutil.copy('/var/lib/irods/log/test_output.log', output_directory)
  
+def run_unit_test(test_name):
+    report_style= 'junit'
+    report_filename = test_name + '_junit_report.xml'
+    unit_test_binary = os.path.join(get_irods_packages_directory(), test_name)
+    unit_test_cmd = "'{0}' -r {1} -o {2}".format(unit_test_binary, report_style, report_filename)
+    cmd = ['su', '-', 'irods', '-c', unit_test_cmd]
+
+    try:
+        return subprocess.call(cmd)
+    finally:
+        src_dir = '/var/lib/irods'
+        dst_dir = os.path.join('/irods_test_env', irods_python_ci_utilities.get_irods_platform_string(), 'unit_tests')
+        irods_python_ci_utilities.gather_files_satisfying_predicate(src_dir, dst_dir, lambda f: os.path.basename(f).endswith('_junit_report.xml'))
+ 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test_plugin', action='store_true', default=False)
@@ -85,21 +99,23 @@ def main():
     parser.add_argument('-t', '--test_name', default=None, help='test name or the plugin name')
     parser.add_argument('--plugin_repo', default='https://github.com/irods/irods_microservice_plugins_curl.git', help='plugin repo')
     parser.add_argument('--plugin_commitish', default='4-2-stable', help='plugin commitish')
+    parser.add_argument('--unit_test', action='store_true')
     parser.add_argument('--passthrough_arguments', default=[], nargs=argparse.REMAINDER)
 
     args = parser.parse_args()
-    install_and_setup(args.database_type)
+
+    install_irods_packages(args.database_type)
     start_database(args.database_type)
     setup_irods(args.database_type)
-    test_name = args.test_name
-    
-    if not args.test_plugin:    
+
+    if args.unit_test:
+        sys.exit(run_unit_test(args.test_name))
+    elif not args.test_plugin:    
         rc = run_test(args.test_name, get_irods_packages_directory())
         sys.exit(rc)
     else:
         rc, stdout, stderr = checkout_git_repo_and_run_test_hook(args.plugin_repo, args.plugin_commitish, args.passthrough_arguments)
         sys.exit(rc)
-        
 
 if __name__ == '__main__':
     main()
