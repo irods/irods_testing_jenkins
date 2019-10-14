@@ -1,0 +1,25 @@
+ARG base_image
+
+FROM $base_image
+
+ARG arg_externals_repo="https://github.com/irods/externals"
+ENV EXTERNALS_REPO=${arg_externals_repo}
+
+ARG arg_externals_commitish="4-2-stable"
+ENV EXTERNALS_COMMITISH=${arg_externals_commitish}
+
+ENV IRODS_EXTERNALS_DIRECTORY=/irods_externals
+
+RUN mkdir -p $IRODS_EXTERNALS_DIRECTORY &&\
+    chmod -R 775 $IRODS_EXTERNALS_DIRECTORY &&\
+    git clone $EXTERNALS_REPO $IRODS_EXTERNALS_DIRECTORY && \
+    cd $IRODS_EXTERNALS_DIRECTORY && git checkout $EXTERNALS_COMMITISH && git submodule update --init --recursive
+
+ENV BUILD_HOOK = $IRODS_EXTERNALS_DIRECTORY/irods_consortium_continuous_integration_build_hook.py
+
+# Set command to execute when launching the container.
+ADD build_externals.py /
+RUN chmod u+x /build_externals.py
+
+VOLUME [ "/sys/fs/cgroup" ]
+CMD ["/sbin/init"]

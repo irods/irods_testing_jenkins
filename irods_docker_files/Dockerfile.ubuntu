@@ -16,13 +16,12 @@ RUN apt-get install -y ca-certificates curl gnupg-agent software-properties-comm
     apt-get update -qq && \
     apt-get install -qqy docker-ce
 
-RUN wget -qO - https://core-dev.irods.org/irods-core-dev-signing-key.asc | apt-key add -; \
-    echo "deb [arch=amd64] https://core-dev.irods.org/apt/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/renci-irods-core-dev.list; \
-    apt-get clean &&\
+RUN apt-get clean &&\
     apt-get update &&\
-    apt-get install -y libssl-dev libfuse2 lsof rsyslog gdebi vim
+    apt-get install -y libssl-dev libfuse2 lsof rsyslog gdebi vim fuse
 
 RUN apt-get install -y libffi-dev libssl-dev
+RUN pip install -U setuptools
 RUN python -m easy_install --upgrade pyOpenSSL
 RUN python -m easy_install --upgrade cryptography
 RUN apt-get update
@@ -40,3 +39,9 @@ RUN DEBIAN_FRONTEND=noninteractive &&\
 RUN DEBIAN_FRONTEND=noninteractive &&\
     mkdir -p $IRODS_TEST_RESULTS &&\
     chmod -R 775 $IRODS_TEST_RESULTS 
+
+RUN DEBIAN_FRONTEND=noninteractive &&\
+    apt-get install -y tzdata &&\
+    ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime &&\
+    dpkg-reconfigure --frontend noninteractive tzdata
+
