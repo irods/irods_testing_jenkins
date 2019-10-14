@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.33">
+<flow-definition plugin="workflow-job@2.32">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -47,6 +47,12 @@
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_EXTERNALS_ROOT_DIR</name>
+          <description></description>
+          <defaultValue>None</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
           <name>PARAMETER_TEST_PARALLELISM</name>
           <description>The number of tests to run in parallel per OS/Database flavor.</description>
           <defaultValue>4</defaultValue>
@@ -55,7 +61,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.72">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.70">
     <script>node {
      def build_id = env.BUILD_ID
      if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
@@ -78,7 +84,8 @@
                                                  &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE +
                                                  &apos; --irods_repo &apos; + PARAMETER_IRODS_REPO +
                                                  &apos; --irods_commitish &apos; + PARAMETER_IRODS_COMMITISH +
-                                                 &apos; --test_parallelism &apos; + PARAMETER_TEST_PARALLELISM
+                                                 &apos; --test_parallelism &apos; + PARAMETER_TEST_PARALLELISM +
+                                                 &apos; --externals_dir &apos; + PARAMETER_EXTERNALS_ROOT_DIR
                 parallelBranches[&quot;${os}&quot;] = {
                     sh run_cmd 
                 }
