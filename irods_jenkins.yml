@@ -11,6 +11,7 @@ services:
       - ./jenkins_home:/var/jenkins_home
       - ./irods_docker_files:/irods_docker_files
       - ./jenkins_output:/jenkins_output
+      - /projects/irods/vsphere-testing/externals/amazon_web_services-CI.keypair:/projects/irods/vsphere-testing/externals/amazon_web_services-CI.keypair
       - /var/run/docker.sock:/var/run/docker.sock
     secrets:
       - jenkins-user
