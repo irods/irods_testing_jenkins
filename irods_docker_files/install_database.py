@@ -22,12 +22,20 @@ def install_database(database):
                 out, err = status_db.communicate()
                 if 'accepting connections' in out:
                     status = out
+                time.sleep(1)
          
         elif distribution == 'Centos' or distribution == 'Centos linux':
              irods_python_ci_utilities.install_os_packages(['postgresql-server', 'postgresql-contrib'])
              irods_python_ci_utilities.subprocess_get_output(['su', '-', 'postgres', '-c' '"initdb"'], check_rc=True)
              irods_python_ci_utilities.subprocess_get_output(['su', '-', 'postgres', '-c', "pg_ctl -D /var/lib/pgsql/data -l logfile start"], check_rc=True)
-             time.sleep(5)
+             status = 'no server running'
+             while status == 'no server running':
+                 db_status = subprocess.Popen(['su', '-', 'postgres', '-c', "pg_ctl -D /var/lib/pgsql/data -l logfile status"], stdout=PIPE, stderr=PIPE)
+                 _out, _err = db_status.communicate()
+                 if 'server is running' in _out and '/usr/bin/postgres "-D" "/var/lib/pgsql/data"' in _out:
+                     status = _out
+                 time.sleep(1)
+             #time.sleep(5)
 
 
 def configure_database(database):
