@@ -54,4 +54,11 @@ We will use docker swarm to install/run this image. Docker swarm generally consi
     ```
 - Connect to the running Jenkins instance and login with admin/password:
     http://localhost:8081
-
+- Stop Jenkins
+    ```
+    docker service rm irods-jenkins_main
+    ```
+- Restart Jenkins
+    ```
+    docker stack deploy -c irods_jenkins.yml irods-jenkins
+    ```
