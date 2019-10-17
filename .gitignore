@@ -2,16 +2,4 @@
 **.vim
 **.swp
 **.un
-jenkins_home/*
 jenkins_output/*
-!jenkins_home/jobs/all_plugins_build_and_test_workflow/config.xml
-!jenkins_home/jobs/build_base_os/config.xml
-!jenkins_home/jobs/build_irods_on_base/config.xml
-!jenkins_home/jobs/build_plugins_on_base/config.xml
-!jenkins_home/jobs/collection-mtime-plugin-build-and-test-workflow/config.xml
-!jenkins_home/jobs/curl-plugin-build-and-test-workflow/config.xml
-!jenkins_home/jobs/irods-build-and-test-workflow/config.xml
-!jenkins_home/jobs/run_irods_tests/config.xml
-!jenkins_home/jobs/run_plugin_tests/config.xml
-!jenkins_home/jobs/run_tests_on_federation/config.xml
-!jenkins_home/jobs/run_tests_on_topology/config.xml
