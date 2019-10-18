@@ -29,7 +29,7 @@ We will use docker swarm to install/run this image. Docker swarm generally consi
     ```
 - Create and start a local registry:
     ```
-    $ docker service create --name registry --publish published=5000,target=5000 registry:2
+    docker service create --name registry --publish published=5000,target=5000 registry:2
     ```
 - Tag the irods-jenkins image so that it points to the local registry:
     ```
