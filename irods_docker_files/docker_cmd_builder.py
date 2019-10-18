@@ -121,7 +121,7 @@ class DockerCommandsBuilder(object):
         if self.test_name is not None:
             cmd.extend(['--test_name', self.test_name])
         if self.is_unit_test:
-            cmd.append(['--unit_test'])
+            cmd.append('--unit_test')
         if self.externals_mount is not None and not 'None' in self.externals_mount:
             cmd.append('--install_externals')
         if self.plugin_mount is not None:

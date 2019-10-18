@@ -26,6 +26,7 @@ def download_list_of_tests(irods_repo, irods_commitish, relative_path):
     return json.loads(response.text)
 
 def run_command_in_container(run_cmd, exec_cmd, stop_cmd, container_name):
+    # the docker run command (stand up a container)
     run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
     _out, _err = run_proc.communicate()
     _running = False
@@ -41,9 +42,11 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, container_name):
     print("_out", _out)
     _rrc = run_proc.returncode
     print("return code ",_rrc)
+    # execute a command in the running container
     exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
     _eout, _eerr = exec_proc.communicate()
     _rc = exec_proc.returncode
+    # stop the container
     stop_proc = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
     return _rc
 
@@ -114,7 +117,7 @@ def main():
 
     run_pool = Pool(processes=int(args.test_parallelism))
 
-    containers = [{'test_name': docker_cmd['test_name'], 'proc': run_pool.apply_async(run_command_in_container, (docker_cmd['run_cmd'], docker_cmd['exec_cmd'], docker_cmd['stop_cmd'], docker_cmd['container_name'],))} for docker_cmd in docker_cmds_list]
+    containers = [{'test_name': docker_cmd['test_name'], 'proc': run_pool.apply_async(run_command_in_container, (docker_cmd['run_cmd'], docker_cmd['exec_cmd'], docker_cmd['stop_cmd'], docker_cmd['container_name']))} for docker_cmd in docker_cmds_list]
 
     container_error_codes = [{'test_name': c['test_name'], 'error_code': c['proc'].get()} for c in containers]
 
@@ -130,6 +133,6 @@ def main():
         for test_name in failures:
             print('\t{0}'.format(test_name))
         sys.exit(1)
- 
+
 if __name__ == '__main__':
     main()
