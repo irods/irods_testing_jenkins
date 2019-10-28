@@ -7,49 +7,12 @@ import sys
 import irods_python_ci_utilities
 import subprocess
 import shutil
+import ci_utilities
 import time
 from subprocess import Popen, PIPE
 
 def get_irods_packages_directory():
     return '/irods_build/' + irods_python_ci_utilities.get_irods_platform_string()
-
-def install_and_setup(database_type):
-    irods_packages_directory = get_irods_packages_directory()
-    if os.path.exists(irods_packages_directory):
-        icat_package_basename = filter(lambda x:'irods-server' in x, os.listdir(irods_packages_directory))[0]
-        if 'irods-server' in icat_package_basename:
-            server_package = os.path.join(irods_packages_directory, icat_package_basename)
-            runtime_package = server_package.replace('irods-server', 'irods-runtime')
-            icommands_package = server_package.replace('irods-server', 'irods-icommands')
-            irods_python_ci_utilities.install_os_packages_from_files([runtime_package, icommands_package, server_package])
-        else:
-            raise RuntimeError('unhandled package name')
-
-        install_database_plugin(irods_packages_directory, database_type)
-   
-def install_database_plugin(irods_packages_directory, database_type):
-    package_filter = 'irods-database-plugin-' + database_type
-    database_plugin_basename = filter(lambda x:package_filter in x, os.listdir(irods_packages_directory))[0]
-    database_plugin = os.path.join(irods_packages_directory, database_plugin_basename)
-    irods_python_ci_utilities.install_os_packages_from_files([database_plugin])
-
-def start_database(database_type, distribution):
-    if database_type == 'postgres' and distribution == 'Ubuntu':
-        start_db = subprocess.Popen(['service', 'postgresql', 'start'])
-        start_db.wait()
-        status = 'no response'
-        while status == 'no response':
-            status_db = subprocess.Popen(['pg_isready'], stdout=PIPE, stderr=PIPE)
-            out, err = status_db.communicate()
-            if 'accepting connections' in out:
-                status = out
-    elif database_type == 'postgres' and distribution == 'Centos linux':
-        start_db = subprocess.Popen(['su', '-', 'postgres', '-c', "pg_ctl -D /var/lib/pgsql/data -l logfile start"])
-        start_db.wait()
-        rc = 1
-        while rc != 0:
-            rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['su', '-', 'postgres', '-c', "psql ICAT -c '\d'>/dev/null 2>&1"])
-            time.sleep(1)
 
 def setup_irods(database_type):
     if database_type == 'postgres':
@@ -97,6 +60,7 @@ def check_topo_state(machine_name):
             _out, _err = ec_proc.communicate()
             _out_split = _out.split('/')
             _ec = int(_out_split[0])
+            return _ec
             sys.exit(_ec)
 
 def main():
@@ -105,6 +69,7 @@ def main():
     parser.add_argument('--consumer_name', type=str)
     parser.add_argument('--provider_name', type=str, required=True)
     parser.add_argument('-d', '--database_type', default='postgres', help='database type', required=True)
+    parser.add_argument('--install_externals', action='store_true', default=False)
     parser.add_argument('--test_type', type=str)
     parser.add_argument('--test_name', type=str)
     parser.add_argument('--network_name', type=str, required=True)
@@ -113,10 +78,9 @@ def main():
     args = parser.parse_args()
    
     distribution = irods_python_ci_utilities.get_distribution()
-    install_and_setup(args.database_type)
+    ci_utilities.install_irods_packages(args.database_type, args.install_externals, get_irods_packages_directory())
 
     if args.is_consumer:
-        print('let us set the consumer up')
         connect_to_network(args.consumer_name, args.alias_name, args.network_name)
         setup_consumer()
         if args.test_type == 'topology_resource':
@@ -128,7 +92,6 @@ def main():
             check_topo_state(args.provider_name)
     else:
         connect_to_network(args.provider_name, args.alias_name, args.network_name)
-        start_database(args.database_type, distribution)
         setup_irods(args.database_type)
         if args.test_type == 'topology_icat':
             check_ports_open('resource1.example.org')
@@ -138,7 +101,6 @@ def main():
             check_ports_open('resource1.example.org')
             check_topo_state(args.consumer_name)
 
-    subprocess.check_call(['tail -f /dev/null'], shell=True)
 
 if __name__ == '__main__':
     main()

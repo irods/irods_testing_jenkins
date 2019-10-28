@@ -6,7 +6,10 @@ import argparse
 import subprocess
 import json
 import sys
+import time
+
 from subprocess import Popen, PIPE
+from multiprocessing import Pool
 
 def get_build_tag(base_os, stage, build_id):
     build_tag = base_os + '-' + stage + ':' + build_id
@@ -22,6 +25,32 @@ def get_base_image(base_os, build_id):
 
 def get_test_name_prefix(base_os, prefix):
     test_name_prefix = base_os + '-' + prefix
+
+def get_docker_cmd(resource, test_type, exec_cmd, stop_cmd, container_name):
+    docker_cmd = {'resource_type': resource,
+                  'test_type': test_type,
+                  'exec_cmd': exec_cmd,
+                  'stop_cmd': stop_cmd,
+                  'container_name': container_name
+                 }
+    return docker_cmd
+
+def run_command_in_container(exec_cmd, stop_cmd, container_name):
+    _running = False
+    state_cmd = ['docker', 'inspect', '-f', '{{.State.Running}}', container_name]
+    while not _running:
+        state_proc = Popen(state_cmd, stdout=PIPE, stderr=PIPE)
+        _sout, _serr = state_proc.communicate()
+        if 'true' in _sout:
+            _running = True
+        time.sleep(1)
+    
+    exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
+    _out, _err = exec_proc.communicate()
+    _rc = exec_proc.returncode
+
+    stop_proc = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
+    return _rc
 
 def install_irods(build_tag, base_image, install_database):
     docker_cmd =  ['docker build -t {0} --build-arg base_image={1} --build-arg arg_install_database={2} -f Dockerfile.topo .'.format(build_tag, base_image, install_database)]
@@ -50,61 +79,67 @@ def create_topo_network(network_name):
 
 def create_topology(provider_tag, consumer_tag_list, network_name, test_name_prefix, output_directory, database_type, irods_build_dir, platform_target, test_type, test_name):
     docker_run_list = []
+    docker_cmds_list = []
     machine_list = []
     docker_socket = '/var/run/docker.sock:/var/run/docker.sock'
     build_mount = irods_build_dir + ':/irods_build'
-    results_mount = output_directory + ':/irods_test_env' 
+    results_mount = output_directory + ':/irods_test_env'
+    cgroup_mount = '/sys/fs/cgroup:/sys/fs/cgroup:ro'
     provider_name = platform_target + '-' + test_name_prefix + '-provider'
     consumer_name = platform_target + '-' + test_name_prefix + '-consumer-1'
     print(network_name)
     machine_list.append(provider_name)
     
     if test_type == 'topology_icat':
-        provider_cmd = ['docker', 'run', '--name', provider_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '--expose', '1248', '--expose', '1247', '-h', 'icat.example.org', '-P', provider_tag, '--database_type', database_type, '--provider_name', provider_name, '--test_type', test_type, '--test_name', test_name, '--network_name', network_name, '--alias_name', 'icat.example.org']
+        provider_run_cmd = ['docker', 'run', '-d', '--rm', '--name', provider_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '-v', cgroup_mount, '--expose', '1248', '--expose', '1247', '-h', 'icat.example.org', '-P', provider_tag]
+        provider_exec_cmd = ['docker', 'exec', provider_name, 'python', 'setup_topo.py', '--database_type', database_type, '--provider_name', provider_name, '--test_type', test_type, '--test_name', test_name, '--network_name', network_name, '--alias_name', 'icat.example.org']
     else:
-        provider_cmd = ['docker', 'run', '--name', provider_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '--expose', '1248', '--expose', '1247', '-h', 'icat.example.org','-P', provider_tag, '--database_type', database_type, '--provider_name', provider_name,  '--network_name', network_name, '--alias_name', 'icat.example.org', '--consumer_name', consumer_name]
-
-    print(provider_cmd)
-
-    docker_run_list.append(provider_cmd)
+        provider_run_cmd = ['docker', 'run', '-d', '--rm', '--name', provider_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '-v', cgroup_mount, '--expose', '1248', '--expose', '1247', '-h', 'icat.example.org','-P', provider_tag]
+        provider_exec_cmd = ['docker', 'exec', provider_name, 'python', 'setup_topo.py', '--database_type', database_type, '--provider_name', provider_name,  '--network_name', network_name, '--alias_name', 'icat.example.org', '--consumer_name', consumer_name]
+    
+    print(provider_exec_cmd)
+    provider_stop_cmd = ['docker', 'stop', provider_name]
+    docker_cmd = get_docker_cmd('provider', test_type, provider_exec_cmd, provider_stop_cmd, provider_name)
+    docker_run_list.append(provider_run_cmd)
+    docker_cmds_list.append(docker_cmd)
+    
     for i, consumer_tag in enumerate(consumer_tag_list, start=1):
         consumer_name = platform_target + '-' + test_name_prefix + '-consumer-' + str(i)
         machine_list.append(consumer_name)
         resource_name = 'resource' + str(i) + '.example.org'
         if test_type == 'topology_resource' and i == 1:
-            consumer_cmd = ['docker', 'run', '-d', '--name', consumer_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '-h', resource_name, consumer_tag, '--database_type', database_type, '--is_consumer', '--consumer_name', consumer_name, '--provider_name', provider_name, '--test_type', test_type, '--test_name', test_name, '--network_name', network_name, '--alias_name', resource_name]
+            consumer_run_cmd = ['docker', 'run', '-d', '--rm', '--name', consumer_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '-v', cgroup_mount, '-h', resource_name, consumer_tag]
+            consumer_exec_cmd = ['docker', 'exec', consumer_name,'python', 'setup_topo.py', '--database_type', database_type, '--is_consumer', '--consumer_name', consumer_name, '--provider_name', provider_name, '--test_type', test_type, '--test_name', test_name, '--network_name', network_name, '--alias_name', resource_name]
         else:
-            consumer_cmd = ['docker', 'run', '-d', '--name', consumer_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '-h', resource_name, consumer_tag, '--database_type', database_type, '--is_consumer', '--consumer_name', consumer_name, '--provider_name', provider_name, '--network_name', network_name, '--alias_name', resource_name]
+            consumer_run_cmd = ['docker', 'run', '-d', '--rm', '--name', consumer_name, '-v', build_mount, '-v', docker_socket, '-v', results_mount, '-h', resource_name, consumer_tag]
+            consumer_exec_cmd = ['docker', 'exec', consumer_name,'python', 'setup_topo.py', '--database_type', database_type, '--is_consumer', '--consumer_name', consumer_name, '--provider_name', provider_name, '--network_name', network_name, '--alias_name', resource_name]
+        
+        print(consumer_exec_cmd)
+        consumer_stop_cmd = ['docker', 'stop', consumer_name]
+        consumer_str = 'consumer-' + str(i)
+        docker_cmd = get_docker_cmd(consumer_str, test_type, consumer_exec_cmd, consumer_stop_cmd, consumer_name)
+        docker_run_list.append(consumer_run_cmd)
+        docker_cmds_list.append(docker_cmd)
 
-        docker_run_list.append(consumer_cmd)
-        print(consumer_cmd)
+    run_pool = Pool(processes=int(4))
+    run_procs = [Popen(docker_cmd, stdout=PIPE, stderr=PIPE) for docker_cmd in docker_run_list]
+    containers = [{'test_type': docker_cmd['test_type'], 'resource_type':docker_cmd['resource_type'], 'proc': run_pool.apply_async(run_command_in_container, (docker_cmd['exec_cmd'], docker_cmd['stop_cmd'], docker_cmd['container_name']))} for docker_cmd in docker_cmds_list]
+    container_error_codes = [{'test_type': c['test_type'], 'resource_type': c['resource_type'],'error_code': c['proc'].get()} for c in containers]
+    #print(container_error_codes)
+    check_topo_state(machine_list, network_name, container_error_codes)
 
-    topo_procs = [Popen(docker_cmd, stdout=PIPE, stderr=PIPE) for docker_cmd in docker_run_list]
-    exit_codes = [proc.wait() for proc in topo_procs]
-    check_topo_state(machine_list, network_name)
+    #sys.exit(1)
 
-def check_topo_state(machine_list, network_name):
-    exit_codes = []
+def check_topo_state(machine_list, network_name, container_error_codes):
+    failures = []
     for machine_name in machine_list:
-        is_running = True
-        while is_running:
-            cmd = ['docker', 'inspect', '--format', '{{.State.Running}}', machine_name]
-            proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
-            output, err = proc.communicate()
-            if 'false' in output:
-                is_running = False
-                exit_code = ['docker', 'inspect', '--format', '{{.State.ExitCode}}', machine_name]
-                ec_proc = Popen(exit_code, stdout=PIPE, stderr=PIPE)
-                _out, _err = ec_proc.communicate()
-                if not _out == "0\n":
-                    exit_codes.append(_out)
-                else:
-                    p = Popen(['docker', 'rm', machine_name], stdout=PIPE, stderr=PIPE)
-                    p.communicate()
+        for ec in container_error_codes:
+            if ec['error_code'] != 0 and ec['resource_type'] == 'provider' and ec['test_type'] == 'topology_icat':
+                failures.append(ec['resource_type'])
     
     rm_network = Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE)
     rm_network.wait()
-    if len(exit_codes) > 0:
+    if len(failures) > 0:
         sys.exit(1)
 
     sys.exit(0)

@@ -9,48 +9,11 @@ import irods_python_ci_utilities
 import subprocess
 import shutil
 import time
+import ci_utilities
 from subprocess import Popen, PIPE
 
 def get_irods_packages_directory():
     return '/irods_build/' + irods_python_ci_utilities.get_irods_platform_string()
-
-def install_and_setup(database_type):
-    irods_packages_directory = get_irods_packages_directory()
-    if os.path.exists(irods_packages_directory):
-        icat_package_basename = filter(lambda x:'irods-server' in x, os.listdir(irods_packages_directory))[0]
-        if 'irods-server' in icat_package_basename:
-            server_package = os.path.join(irods_packages_directory, icat_package_basename)
-            runtime_package = server_package.replace('irods-server', 'irods-runtime')
-            icommands_package = server_package.replace('irods-server', 'irods-icommands')
-            irods_python_ci_utilities.install_os_packages_from_files([runtime_package, icommands_package, server_package])
-        else:
-            raise RuntimeError('unhandled package name')
-
-        install_database_plugin(irods_packages_directory, database_type)
-   
-def install_database_plugin(irods_packages_directory, database_type):
-    package_filter = 'irods-database-plugin-' + database_type
-    database_plugin_basename = filter(lambda x:package_filter in x, os.listdir(irods_packages_directory))[0]
-    database_plugin = os.path.join(irods_packages_directory, database_plugin_basename)
-    irods_python_ci_utilities.install_os_packages_from_files([database_plugin])
-
-def start_database(database_type, distribution):
-    if database_type == 'postgres' and distribution == 'Ubuntu':
-        start_db = subprocess.Popen(['service', 'postgresql', 'start'])
-        start_db.wait()
-        status = 'no response'
-        while status == 'no response':
-            status_db = subprocess.Popen(['pg_isready'], stdout=PIPE, stderr=PIPE)
-            out, err = status_db.communicate()
-            if 'accepting connections' in out:
-                status = out
-    elif database_type == 'postgres' and distribution == 'Centos linux':
-        start_db = subprocess.Popen(['su', '-', 'postgres', '-c', "pg_ctl -D /var/lib/pgsql/data -l logfile start"])
-        start_db.wait()
-        rc = 1
-        while rc != 0:
-            rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['su', '-', 'postgres', '-c', "psql ICAT -c '\d'>/dev/null 2>&1"])
-            time.sleep(1)
 
 def setup_irods(database_type, zone_name):
     if database_type == 'postgres':
@@ -139,13 +102,14 @@ def run_tests(zone_name, remote_zone, test_type, test_name):
         _rc, _out, _err = irods_python_ci_utilities.subprocess_get_output( ['python run_tests_in_zone.py --test_type {0} --specific_test {1} --federation_args {2}'.format(test_type, test_name, federation_args)], shell=True, check_rc=True)
         return _rc
 
+
 def check_fed_state(machine_name):
     is_running = True
     while is_running:
         cmd = ['docker', 'inspect', '--format', '{{.State.Running}}', machine_name]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
         output, err = proc.communicate()
-        if 'false' in output:
+        if 'Error: No such object' in err:
             is_running = False
             exit_code = ['docker', 'inspect', '--format', '{{.State.ExitCode}}', machine_name]
             ec_proc = Popen(exit_code, stdout=PIPE, stderr=PIPE)
@@ -159,6 +123,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--federation_name', type=str, required=True)
     parser.add_argument('-d', '--database_type', default='postgres', help='database type', required=True)
+    parser.add_argument('--install_externals', action='store_true', default=False)
     parser.add_argument('--test_type', type=str)
     parser.add_argument('--test_name', type=str, default=None)
     parser.add_argument('--network_name', type=str, required=True)
@@ -169,10 +134,9 @@ def main():
     args = parser.parse_args()
    
     distribution = irods_python_ci_utilities.get_distribution()
-    install_and_setup(args.database_type)
+    ci_utilities.install_irods_packages(args.database_type, args.install_externals, get_irods_packages_directory())
 
     connect_to_network(args.federation_name, args.alias_name, args.network_name)
-    start_database(args.database_type, distribution)
     setup_irods(args.database_type, args.zone_name)
     configure_federation(args.zone_name)
     if args.zone_name == 'otherZone':
@@ -182,7 +146,6 @@ def main():
         rc = check_fed_state(args.remote_zone)
         sys.exit(rc)
 
-    subprocess.check_call(['tail -f /dev/null'], shell=True)
 
 if __name__ == '__main__':
     main()
