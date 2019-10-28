@@ -53,45 +53,12 @@ def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo,
     else:
         print('OS not supported')
 
-
-#        if args.externals_dir is None or args.externals_dir == '':
-#            if 's3' in machine_name:
-#                run_cmd = ['docker run --privileged -d --rm --name {0} -v {1} -v {2} -v {3} -v {4} -v /tmp/$(mktemp -d):/run -v {5} -h icat.example.org {6}'.format(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, image_name)]
-#            else:
-#                run_cmd = ['docker run --privileged -d --rm --name {0} -v {1} -v {2} -v {3} -v {4} -v /tmp/$(mktemp -d):/run -h icat.example.org {5}'.format(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, image_name)]
-#        else:
-#            if 's3' in machine_name:
-#                run_cmd = ['docker run --privileged -d --rm --name {0} -v {1} -v {2} -v {3} -v {4} -v /tmp/$(mktemp -d):/run -v {5} -v {6} -h icat.example.org {7}'.format(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, externals_mount, image_name)]
-#            else:
-#                run_cmd = ['docker run --privileged -d --rm --name {0} -v {1} -v {2} -v {3} -v {4} -v /tmp/$(mktemp -d):/run -v {5} -h icat.example.org {6}'.format(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, externals_mount, image_name)]
-#    else:
-#        if args.externals_dir is None or args.externals_dir == '':
-#            if 's3' in machine_name:
-#                run_cmd = ['docker run --privileged -d --rm --name {0} -v {1} -v {2} -v {3} -v {4} -v /tmp/$(mktemp -d):/run -v {5} -h icat.example.org {6}'.format(machine_name, buildmount, plugin_mount, results_mount, cgroup_mount, key_mount, image_name)]
-#            else:
-#                run_cmd = ['docker run --privileged -d --rm --name {0} -v {1} -v {2} -v {3} -v {4} -h icat.example.org {5}'.format(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount,image_name)]
-#        else:
-#            if 's3' in machine_name:
-#                run_cmd = ['docker run --privileged -d --rm --name {0} -v {1} -v {2} -v {3} -v {4} -v /tmp/$(mktemp -d):/run -v {5} -v {6} -h icat.example.org {7}'.format(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, externals_mount, image_name)]
-#            else:
-#                run_cmd = ['docker run --privileged -d --rm --name {0} -v {1} -v {2} -v {3} -v {4} -v {5} -h icat.example.org {6}'.format(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, externals_mount, image_name)]
-#
-#    if args.externals_dir is None or args.externals_dir == '':
-#       exec_cmd = ['docker exec {0} python install_and_test.py --test_plugin --database_type {1} --plugin_repo {2} --plugin_commitish {3} --passthrough_arguments "{4}"'.format(machine_name, database_type, plugin_repo, plugin_commitish, str(passthru_args))]
-#    else:
-#        exec_cmd = ['docker exec {0} python install_and_test.py --test_plugin --database_type {1} --plugin_repo {2} --plugin_commitish {3} --passthrough_arguments "{4}"'.format(machine_name, database_type, plugin_repo, plugin_commitish, str(passthru_args))]
-        
-#    stop_cmd = ['docker stop {0}'.format(machine_name)]
-
-    print(run_cmd)
-    print(exec_cmd)
-    print(stop_cmd)
     run_image = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
     _out, _err = run_image.communicate()
     exec_tests = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
     _eout, _eerr = exec_tests.communicate()
     _rc = exec_tests.returncode
-    #stop_container = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
+    stop_container = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
     print('return code --->>> ', _rc)
     sys.exit(_rc)
 

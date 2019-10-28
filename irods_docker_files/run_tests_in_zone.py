@@ -18,7 +18,7 @@ def run_tests(test_type, specific_test, federation_args):
         'federation': '--run_specific_test test_federation --federation {0}'.format(' '.join(federation_args))
     }
 
-    if specific_test is None:
+    if specific_test is None or specific_test == 'None':
         test_type_argument = test_type_dict[test_type]
     else:
         if test_type == 'topology_icat': 
@@ -38,7 +38,9 @@ def run_tests(test_type, specific_test, federation_args):
     
     try:
         test_output_file = '/var/lib/irods/log/test_output.log'
-        rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'cd scripts; python2 run_tests.py --xml_output {0} 2>&1 | tee {1}; exit $PIPESTATUS'.format(test_type_argument, test_output_file)])
+        run_test_cmd = ['su', '-', 'irods', '-c', 'cd scripts; python2 run_tests.py --xml_output {0} 2>&1 | tee {1}; exit $PIPESTATUS'.format(test_type_argument, test_output_file)]
+        print(run_test_cmd)
+        rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(run_test_cmd)
         return rc
     finally:
         output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(), socket.gethostname())
