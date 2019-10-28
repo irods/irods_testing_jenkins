@@ -15,11 +15,9 @@ ENV JENKINS_OUTPUT=${arg_jenkins_output}
 
 ADD install_database.py /
 RUN chmod u+x /install_database.py
-RUN python /install_database.py -d $DATABASE --install_database $INSTALL_DATABASE
 
-COPY install_externals.py /tmp/install_externals.py
-RUN cd tmp && python install_externals.py
-
+COPY install_externals.py /install_externals.py
+COPY ci_utilities.py /ci_utilities.py
 COPY irods_consumer.input /tmp/irods_consumer.input
 
 ADD run_tests_in_zone.py /
@@ -27,5 +25,6 @@ RUN chmod u+x /run_tests_in_zone.py
 
 ADD setup_topo.py /
 RUN chmod u+x /setup_topo.py
-ENTRYPOINT ["python","setup_topo.py"]
 
+VOLUME [ "/sys/fs/cgroup" ]
+CMD ["/sbin/init"]
