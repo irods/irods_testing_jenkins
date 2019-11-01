@@ -38,10 +38,7 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, container_name):
             _running = True
         time.sleep(1)
 
-    print(_sout)
-    print("_out", _out)
     _rrc = run_proc.returncode
-    print("return code ",_rrc)
     # execute a command in the running container
     exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
     _eout, _eerr = exec_proc.communicate()
@@ -62,23 +59,24 @@ def get_docker_cmd(test, run_cmd, exec_cmd, stop_cmd, container_name):
 def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
     docker_cmds_list = []
     build_mount = cmd_line_args.build_dir + ':/irods_build'
-    results_mount = cmd_line_args.jenkins_output + ':/irods_test_env'
+    results_mount = cmd_line_args.jenkins_output + '/' + cmd_line_args.database_type + ':/irods_test_env'
     cgroup_mount = '/sys/fs/cgroup:/sys/fs/cgroup:ro'
     run_mount = '/tmp/$(mktemp -d):/run'
     externals_mount = cmd_line_args.externals_dir + ':/irods_externals'
+    mysql_mount = '/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz:/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz'
 
     for test in test_list:
-        container_name = cmd_line_args.test_name_prefix + '_' + test
+        container_name = cmd_line_args.test_name_prefix + '_' + cmd_line_args.database_type + '_' + test
         if 'centos' in cmd_line_args.image_name:
             centosCmdBuilder = DockerCommandsBuilder()
-            centosCmdBuilder.core_constructor(container_name, build_mount, results_mount, cgroup_mount, run_mount, externals_mount, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, is_unit_test)
+            centosCmdBuilder.core_constructor(container_name, build_mount, results_mount, cgroup_mount, None, externals_mount, None, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, is_unit_test)
             run_cmd = centosCmdBuilder.build_run_cmd()
             exec_cmd = centosCmdBuilder.build_exec_cmd()
             stop_cmd = centosCmdBuilder.build_stop_cmd()
             docker_cmd = get_docker_cmd(test, run_cmd, exec_cmd, stop_cmd, container_name)
         elif 'ubuntu' in cmd_line_args.image_name:
             ubuntuCmdBuilder = DockerCommandsBuilder()
-            ubuntuCmdBuilder.core_constructor(container_name, build_mount, results_mount, cgroup_mount, None, externals_mount, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, is_unit_test)
+            ubuntuCmdBuilder.core_constructor(container_name, build_mount, results_mount, cgroup_mount, None, externals_mount, mysql_mount, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, is_unit_test)
 
             run_cmd = ubuntuCmdBuilder.build_run_cmd()
             exec_cmd = ubuntuCmdBuilder.build_exec_cmd()
@@ -111,6 +109,7 @@ def main():
 
     # Add core-test commands to the list.
     test_list = download_list_of_tests(args.irods_repo, args.irods_commitish, 'scripts/core_tests_list.json')
+
     docker_cmds_list.extend(to_docker_commands(test_list, args))
 
     print(docker_cmds_list)
