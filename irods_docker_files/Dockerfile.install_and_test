@@ -15,6 +15,8 @@ RUN chmod u+x /install_database.py
 ADD install_externals.py /
 RUN chmod u+x /install_externals.py
 
+COPY ci_utilities.py /
+
 RUN echo export IRODS_ENABLE_TEST_MODE="1" > /etc/profile.d/irods.sh
 RUN chmod 644 /etc/profile.d/irods.sh
 
