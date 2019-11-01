@@ -12,6 +12,7 @@ services:
       - ./irods_docker_files:/irods_docker_files
       - ./jenkins_output:/jenkins_output
       - /projects/irods/vsphere-testing/externals/amazon_web_services-CI.keypair:/projects/irods/vsphere-testing/externals/amazon_web_services-CI.keypair
+      - /projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz:/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz
       - /var/run/docker.sock:/var/run/docker.sock
     secrets:
       - jenkins-user
