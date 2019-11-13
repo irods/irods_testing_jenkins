@@ -19,9 +19,12 @@ def get_base_image(base_os, build_id):
 def get_test_name_prefix(base_os, prefix):
     test_name_prefix = base_os + '-' + prefix
 
-def install_irods(build_tag, base_image):
+def install_irods(build_tag, base_image, database_type):
     docker_cmd =  ['docker build -t {0} --build-arg base_image={1} -f Dockerfile.install_and_test .'.format(build_tag, base_image)]
     run_build = subprocess.check_call(docker_cmd, shell = True)
+    if database_type == 'oracle':
+        docker_cmd = ['docker build -t {0} -f Dockerfile.xe .'.format('oracle/database:11.2.0.2-xe')]
+        run_build = subprocess.check_call(docker_cmd, shell = True)
 
 def run_tests(image_name, irods_repo, irods_commitish, build_dir, output_directory, database_type, test_parallelism, test_name_prefix, externals_dir):
     run_tests_cmd = ['python run_tests_in_parallel.py --image_name {0} --jenkins_output {1} --test_name_prefix {2} -b {3} --database_type {4} --irods_repo {5} --irods_commitish {6} --test_parallelism {7} --externals_dir {8}'.format(image_name, output_directory, test_name_prefix, build_dir, database_type, irods_repo, irods_commitish, test_parallelism, externals_dir)]
@@ -89,7 +92,7 @@ def main():
     else:
         build_tag = get_build_tag(args.platform_target, 'plugin-install', args.build_id)
     
-    install_irods(build_tag, base_image)
+    install_irods(build_tag, base_image, args.database_type)
     test_name_prefix = args.platform_target + '-' + args.test_name_prefix
 
     if not args.test_plugin:
