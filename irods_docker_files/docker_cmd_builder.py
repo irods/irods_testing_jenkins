@@ -17,6 +17,8 @@ class DockerCommandsBuilder(object):
         self.plugin_commitish = None
         self.passthru_args = None
         self.is_unit_test = False
+        self.database_machine = None
+        self.docker_socket = None
 
     def set_machine_name(self, machine_name):
         self.machine_name = machine_name
@@ -69,6 +71,12 @@ class DockerCommandsBuilder(object):
     def set_is_unit_test(self, is_unit_test):
         self.is_unit_test = is_unit_test
 
+    def set_database_machine(self, database_machine):
+        self.database_machine = database_machine
+
+    def set_docker_socket(self, docker_socket):
+        self.docker_socket = docker_socket
+
     def plugin_constructor(self, machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, run_mount, externals_mount, image_name, python_script, database_type, plugin_repo, plugin_commitish, passthru_args):
         self.set_machine_name(machine_name)
         self.set_build_mount(build_mount)
@@ -85,7 +93,7 @@ class DockerCommandsBuilder(object):
         self.set_plugin_commitish(plugin_commitish)
         self.set_passthru_args(passthru_args)
 
-    def core_constructor(self, machine_name, build_mount, results_mount, cgroup_mount, run_mount, externals_mount, mysql_mount, image_name, python_script, database_type, test_name, is_unit_test):
+    def core_constructor(self, machine_name, build_mount, results_mount, cgroup_mount, run_mount, externals_mount, mysql_mount, image_name, python_script, database_type, test_name, is_unit_test, database_machine, docker_socket):
         self.set_machine_name(machine_name)
         self.set_build_mount(build_mount)
         self.set_results_mount(results_mount)
@@ -98,9 +106,11 @@ class DockerCommandsBuilder(object):
         self.set_database_type(database_type)
         self.set_test_name(test_name)
         self.set_is_unit_test(is_unit_test)
+        self.set_database_machine(database_machine)
+        self.set_docker_socket(docker_socket)
 
     def build_run_cmd(self):
-        cmd = ['docker', 'run', '--privileged', '-d', '--rm', 
+        cmd = ['docker', 'run', '-d', '--rm', 
                 '--name', self.machine_name,
                 '-h', 'icat.example.org', 
                 '-v', self.build_mount,
@@ -117,6 +127,8 @@ class DockerCommandsBuilder(object):
             cmd.extend(['-v', self.key_mount])
         if self.database_type == 'mysql' and self.mysql_mount is not None:
             cmd.extend(['-v', self.mysql_mount])
+        if self.database_type == 'oracle' and self.docker_socket is not None:
+            cmd.extend(['-v', self.docker_socket])
         
         cmd.append(self.image_name)
         
@@ -139,7 +151,9 @@ class DockerCommandsBuilder(object):
             cmd.extend(['--plugin_commitish', self.plugin_commitish])
         if self.passthru_args is not None:
             cmd.extend(['--passthrough_arguments', str(self.passthru_args)])
-        
+        if self.database_machine is not None:
+            cmd.extend(['--database_machine', self.database_machine])
+
         return cmd
 
     def build_stop_cmd(self):

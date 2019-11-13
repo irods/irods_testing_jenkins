@@ -10,6 +10,49 @@ import time
 
 from subprocess import Popen, PIPE
 
+def install_oracle_dependencies_yum():
+    tar_file = os.path.expanduser('/oci.tar')
+    irods_python_ci_utilities.subprocess_get_output(['wget', 'http://people.renci.org/~jasonc/irods/oci.tar', '-O', tar_file], check_rc=True)
+    tar_dir = os.path.expanduser('/oci')
+    os.mkdir(tar_dir)
+    irods_python_ci_utilities.subprocess_get_output(['tar', '-xf', tar_file, '-C', tar_dir], check_rc=True)
+    irods_python_ci_utilities.install_os_packages(['unixODBC'])
+    irods_python_ci_utilities.subprocess_get_output('rpm -i --nodeps {0}/*'.format(tar_dir), use_unsafe_shell=True, check_rc=True)
+    irods_python_ci_utilities.subprocess_get_output(['ln', '-s', '/usr/lib64/libodbcinst.so.2', '/usr/lib64/libodbcinst.so.1'], check_rc=True)
+
+def install_oracle_dependencies_apt():
+    tar_file = os.path.expanduser('/oci.tar')
+    irods_python_ci_utilities.subprocess_get_output(['wget', 'http://people.renci.org/~jasonc/irods/oci.tar', '-O', tar_file], check_rc=True)
+    tar_dir = os.path.expanduser('/oci')
+    os.mkdir(tar_dir)
+    irods_python_ci_utilities.subprocess_get_output(['tar', '-xf', tar_file, '-C', tar_dir], check_rc=True)
+    Popen(['apt-get', 'update']).wait()
+    irods_python_ci_utilities.install_os_packages(['alien', 'libaio1'])
+    irods_python_ci_utilities.subprocess_get_output('alien -i {0}/*'.format(tar_dir), shell=True, check_rc=True)
+
+def install_oracle_client():
+    with tempfile.NamedTemporaryFile() as f:
+        f.write('''
+export LD_LIBRARY_PATH=/usr/lib/oracle/11.2/client64/lib:$LD_LIBRARY_PATH
+export ORACLE_HOME=/usr/lib/oracle/11.2/client64
+export PATH=$ORACLE_HOME/bin:$PATH
+''')
+        f.flush()
+        irods_python_ci_utilities.subprocess_get_output(['su', '-c', "cat '{0}' >> /etc/profile.d/oracle.sh".format(f.name)], check_rc=True)
+        irods_python_ci_utilities.subprocess_get_output(['su', '-c', "echo 'ORACLE_HOME=/usr/lib/oracle/11.2/client64' >> /etc/environment"], check_rc=True)
+        subprocess.check_call('mkdir -p /usr/lib/oracle/11.2/client64/network/admin', shell=True)
+        tns_contents = '''
+XE =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = oracle.example.org)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = XE)
+    )
+  )
+'''
+        irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-c', "echo '{0}' > /usr/lib/oracle/11.2/client64/network/admin/tnsnames.ora".format(tns_contents)], check_rc=True)
+
 def install_database_apt(database):
     if database == 'postgres':
         irods_python_ci_utilities.subprocess_get_output(['apt-get', 'update'], check_rc=True)
@@ -43,7 +86,9 @@ def install_database_apt(database):
             irods_python_ci_utilities.subprocess_get_output(['sudo', 'ln', '-s', '/var/run/mysqld/mysqld.sock', '/tmp/mysql.sock'], check_rc=True)
             irods_python_ci_utilities.subprocess_get_output(['sudo', os.path.join(tar_output_dir, 'mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit', 'bin', 'myodbc-installer'), '-d', '-a', '-n', 'MySQL ODBC 5.3 Unicode Driver', '-t', 'DRIVER=/usr/lib/libmyodbc5w.so;SETUP=/usr/lib/myodbc5S.so'], check_rc=True)
             irods_python_ci_utilities.subprocess_get_output(['sudo', os.path.join(tar_output_dir, 'mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit', 'bin', 'myodbc-installer'), '-d', '-a', '-n', 'MySQL ODBC 5.3 ANSI Driver', '-t', 'DRIVER=/usr/lib/libmyodbc5a.so;SETUP=/usr/lib/myodbc5S.so'], check_rc=True)
-
+    elif database == 'oracle':
+        install_oracle_dependencies()
+        install_oracle_client()
 
 def install_database_yum(database):
     if database == 'postgres':
@@ -66,6 +111,9 @@ def install_database_yum(database):
         irods_python_ci_utilities.subprocess_get_output(['sed', '-i', r's/\[mysqld\]/\[mysqld\]\nlog_bin_trust_function_creators=1/', '/etc/my.cnf'], check_rc=True)
         irods_python_ci_utilities.subprocess_get_output(['systemctl', 'restart', 'mariadb'], check_rc=True)
         install_mysql_pcre(['pcre-devel', 'gcc', 'make', 'automake', 'mysql-devel', 'libtool', 'autoconf'], 'mariadb')
+    elif database == 'oracle':
+        install_oracle_dependencies()
+        install_oracle_client()
 
 def install_database_zypper(database):
     print("not yet implemented")
@@ -80,6 +128,18 @@ def install_database(database):
 
     try:
         return dispatch_map[irods_python_ci_utilities.get_distribution()](database)
+    except KeyError:
+        irods_python_ci_utilities.raise_not_implemented_for_distribution()
+
+def install_oracle_dependencies():
+    dispatch_map = {
+        'Ubuntu': install_oracle_dependencies_apt,
+        'Centos': install_oracle_dependencies_yum,
+        'Centos linux': install_oracle_dependencies_yum,
+    }
+
+    try:
+        return dispatch_map[irods_python_ci_utilities.get_distribution()]()
     except KeyError:
         irods_python_ci_utilities.raise_not_implemented_for_distribution()
 

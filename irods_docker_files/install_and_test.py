@@ -50,11 +50,23 @@ def install_externals_from_list(externals_list):
     install_externals_cmd = 'python install_externals.py --externals_root_directory {0} --externals_to_install {1}'.format(get_externals_directory(), externals_list)
     subprocess.check_call(install_externals_cmd, shell=True)
 
-def setup_irods(database_type):
+def setup_irods(database_type, database_machine):
     if database_type == 'postgres':
         subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
     elif database_type == 'mysql':
         subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_mysql.input'], shell=True)
+    elif database_type == 'oracle':
+        status = 'running'
+        while status == 'running':
+            status_cmd = ['docker', 'inspect', '--format', '{{.State.Health.Status}}', database_machine]
+            status_proc = Popen(status_cmd, stdout = PIPE, stderr=PIPE)
+            _out, _err = status_proc.communicate()
+            if 'healthy' in _out:
+                status = _out
+
+            time.sleep(1)
+
+        subprocess.check_call(['export LD_LIBRARY_PATH=/usr/lib/oracle/11.2/client64/lib:$LD_LIBRARY_PATH; export ORACLE_HOME=/usr/lib/oracle/11.2/client64; export PATH=$ORACLE_HOME/bin:$PATH; python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_oracle.input'], shell=True)
     else:
         print(database_type, ' not supported')
 
@@ -115,6 +127,7 @@ def main():
     parser.add_argument('--test_plugin', action='store_true', default=False)
     parser.add_argument('--install_externals', action='store_true', default=False)
     parser.add_argument('-d', '--database_type', default='postgres', help='database type', required=True)
+    parser.add_argument('--database_machine', help='oracle database container name', default=None)
     parser.add_argument('-t', '--test_name', default=None, help='test name or the plugin name')
     parser.add_argument('--plugin_repo', default='https://github.com/irods/irods_microservice_plugins_curl.git', help='plugin repo')
     parser.add_argument('--plugin_commitish', default='4-2-stable', help='plugin commitish')
@@ -125,7 +138,7 @@ def main():
 
     ci_utilities.install_irods_packages(args.database_type, args.install_externals, get_irods_packages_directory())
 
-    setup_irods(args.database_type)
+    setup_irods(args.database_type, args.database_machine)
 
     if args.unit_test:
         sys.exit(run_unit_test(args.test_name))
