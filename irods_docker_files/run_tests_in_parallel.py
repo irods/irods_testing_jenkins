@@ -66,7 +66,6 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, container_name, databa
     exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
     _eout, _eerr = exec_proc.communicate()
     _rc = exec_proc.returncode
-    print(_rc)
     # stop the container
     stop_proc = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
     if database_container is not None:

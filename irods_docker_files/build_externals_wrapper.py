@@ -5,6 +5,8 @@ from __future__ import print_function
 import configuration
 import argparse
 import subprocess
+import sys
+from subprocess import Popen, PIPE
 
 def build_externals_in_containers(base_os, build_id, externals_repo, externals_commitish, output_directory, machine_name):
     build_tag = base_os + '-externals-build:' + build_id
@@ -18,15 +20,20 @@ def build_externals_in_containers(base_os, build_id, externals_repo, externals_c
 
 def save_externals_build(image_name, output_directory, machine_name):
     cgroup_mount = '/sys/fs/cgroup:/sys/fs/cgroup:ro'
-    run_cmd = ['docker run --privileged -d --rm --name {0} -v {1}:/externals_build_output -v {2} -v /tmp/$(mktemp -d):/run {3}'.format(machine_name, output_directory, cgroup_mount, image_name)]
+    output_mount = '{0}:/externals_build_output'.format(output_directory)
+    run_cmd = ['docker', 'run', '--privileged', '-d', '--rm', '--name',
+               machine_name, '-v', output_mount, '-v', cgroup_mount, image_name]
 
-    exec_cmd = ['docker exec {0} python build_externals.py --output_directory /externals_build_output'.format(machine_name)]
+    exec_cmd = ['docker', 'exec', machine_name, 'python', 'build_externals.py', '--output_directory', '/externals_build_output']
 
-    stop_cmd = ['docker stop {0}'.format(machine_name)]
+    stop_cmd = ['docker', 'stop', machine_name]
 
-    run_image = subprocess.check_call(run_cmd, shell=True)
-    save_build = subprocess.check_call(exec_cmd, shell=True)
-    stop = subprocess.check_call(stop_cmd, shell=True)
+    run_image = Popen(run_cmd, stdout=PIPE, stderr=PIPE).wait()
+    save_build = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
+    _sout, _serr = save_build.communicate()
+    rc = save_build.returncode
+    stop = Popen(stop_cmd, stdout=PIPE, stderr=PIPE).wait()
+    sys.exit(rc)
 
 def main():
     parser = argparse.ArgumentParser(description='Build irods in base os-containers')
