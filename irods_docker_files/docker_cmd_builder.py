@@ -116,7 +116,8 @@ class DockerCommandsBuilder(object):
                 '-v', self.build_mount,
                 '-v', self.results_mount,
                 '-v', self.cgroup_mount]
-
+        if not self.database_type == 'oracle':
+            cmd.extend(['--cap-add', 'SYS_ADMIN', '--device', '/dev/fuse', '--security-opt', 'apparmor:unconfined']) 
         if self.plugin_mount is not None:
             cmd.extend(['-v',self.plugin_mount])
         if self.run_mount is not None:

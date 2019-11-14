@@ -18,37 +18,9 @@ def get_irods_packages_directory():
 def get_externals_directory():
     return '/irods_externals'
 
-def get_package_dependencies(package_name):
-    externals_list = []
-    if irods_python_ci_utilities.get_distribution() == 'Centos linux':
-        proc = Popen(['rpm', '-qp', package_name, '--requires', '|', 'grep', 'irods-externals'], stdout=PIPE, stderr=PIPE)
-        _out, _err = proc.communicate()
-        _out_list = _out.split('\n')
-        for _str in _out_list:
-            if 'irods-externals' in _str:
-                _str = _str.strip() + '*'
-                externals_list.append(_str)
-    else:
-        proc = Popen(['dpkg', '-I', package_name], stdout=PIPE, stderr=PIPE)
-        _out, _err = proc.communicate()
-        _out_list = _out.split('\n')
-        for _str in _out_list:
-            if 'irods-externals' in _str:
-                dependency_list = _str.split(':')[1].split(',')
-                for dependency in dependency_list:
-                    if 'irods-externals' in dependency:
-                        dependency = dependency.strip() + '*'
-                        externals_list.append(dependency)
-
-    return ','.join(externals_list)
-
 def get_munge_external():
     munge_external = 'irods-externals-mungefs*'
     return munge_external
-
-def install_externals_from_list(externals_list):
-    install_externals_cmd = 'python install_externals.py --externals_root_directory {0} --externals_to_install {1}'.format(get_externals_directory(), externals_list)
-    subprocess.check_call(install_externals_cmd, shell=True)
 
 def setup_irods(database_type, database_machine):
     if database_type == 'postgres':
@@ -81,8 +53,8 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
     if install_externals:
         plugin_basename = plugin_name + '*'
         plugin_package = os.path.join(plugin_build_dir, plugin_basename)
-        externals_list = get_package_dependencies(plugin_package)
-        install_externals_from_list(externals_list)
+        externals_list = ci_utilities.get_package_dependencies(plugin_package)
+        ci_utilities.install_externals_from_list(externals_list, get_externals_directory())
 
     python_script = 'irods_consortium_continuous_integration_test_hook.py'
     passthru_args = []
@@ -92,16 +64,19 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
             passthru_args = passthru_args + arg1
 
     if 'irods_capability_storage_tiering' in plugin_name:
-        passthru_args.extend(['--munge_path', 'export PATH=/opt/irods-externals/mungefs1.0.1-0/usr/bin:$PATH'])
+        passthru_args.extend(['--munge_path', 'export PATH=/opt/irods-externals/mungefs1.0.2-0/usr/bin:$PATH'])
 
     cmd = ['python', python_script, '--output_root_directory', output_directory, '--built_packages_root_directory', plugin_build_dir] + passthru_args
     print(cmd)
     return irods_python_ci_utilities.subprocess_get_output(cmd, cwd=git_checkout_dir, check_rc=True)
 
-def run_test(test_name, output_root_directory):
+def run_test(test_name, output_root_directory, database_type):
     try:
         test_output_file = '/var/lib/irods/log/test_output.log'
-        rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'cd scripts; export PATH=/opt/irods-externals/mungefs1.0.1-0/usr/bin:$PATH; python2 run_tests.py --use_mungefs --xml_output --run_s={0} 2>&1 | tee {1}; exit $PIPESTATUS'.format(test_name, test_output_file)])
+        if database_type == 'oracle':
+            rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'cd scripts; export PATH=/opt/irods-externals/mungefs1.0.2-0/usr/bin:$PATH; python2 run_tests.py --xml_output --run_s={0} 2>&1 | tee {1}; exit $PIPESTATUS'.format(test_name, test_output_file)])
+        else:
+            rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'cd scripts; export PATH=/opt/irods-externals/mungefs1.0.2-0/usr/bin:$PATH; python2 run_tests.py --use_mungefs --xml_output --run_s={0} 2>&1 | tee {1}; exit $PIPESTATUS'.format(test_name, test_output_file)])
         return rc
     finally:
         output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(),test_name)
@@ -136,14 +111,14 @@ def main():
 
     args = parser.parse_args()
 
-    ci_utilities.install_irods_packages(args.database_type, args.install_externals, get_irods_packages_directory())
+    ci_utilities.install_irods_packages(args.database_type, args.install_externals, get_irods_packages_directory(), get_externals_directory())
 
     setup_irods(args.database_type, args.database_machine)
 
     if args.unit_test:
         sys.exit(run_unit_test(args.test_name))
     elif not args.test_plugin:    
-        rc = run_test(args.test_name, get_irods_packages_directory())
+        rc = run_test(args.test_name, get_irods_packages_directory(), args.database_type)
         sys.exit(rc)
     else:
         rc, stdout, stderr = checkout_git_repo_and_run_test_hook(args.plugin_repo, args.plugin_commitish, args.passthrough_arguments, args.install_externals)

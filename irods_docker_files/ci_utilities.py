@@ -33,6 +33,10 @@ def get_package_dependencies(package_name):
 
     return ','.join(externals_list)
 
+def install_externals_from_list(externals_list, externals_dir):
+    install_externals_cmd = 'python install_externals.py --externals_root_directory {0} --externals_to_install {1}'.format(externals_dir, externals_list)
+    subprocess.check_call(install_externals_cmd, shell=True)
+
 def install_irods_repository_apt():
     irods_python_ci_utilities.subprocess_get_output('wget -qO - https://core-dev.irods.org/irods-core-dev-signing-key.asc | sudo apt-key add -', shell=True, check_rc=True)
     irods_python_ci_utilities.subprocess_get_output('echo "deb [arch=amd64] https://core-dev.irods.org/apt/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/renci-irods-core-dev.list', shell=True, check_rc=True)
@@ -59,7 +63,11 @@ def install_irods_repository():
     except KeyError:
         irods_python_ci_utilities.raise_not_implemented_for_distribution()
 
-def install_irods_packages(database_type, install_externals, irods_packages_directory):
+def get_munge_external():
+    munge_external = 'irods-externals-mungefs*'
+    return munge_external
+
+def install_irods_packages(database_type, install_externals, irods_packages_directory, externals_directory):
     install_database = 'python install_database.py --database_type {0}'.format(database_type)
     subprocess.check_call(install_database, shell=True)
 
@@ -73,7 +81,7 @@ def install_irods_packages(database_type, install_externals, irods_packages_dire
             if install_externals:
                 externals_list = get_package_dependencies(server_package)
                 externals_list = externals_list + ',' + get_munge_external()
-                install_externals_from_list(externals_list)
+                install_externals_from_list(externals_list, externals_directory)
             else:
                 install_irods_repository()
                 #need to install munge here too after munge in core dev
