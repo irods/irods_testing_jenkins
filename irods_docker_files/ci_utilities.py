@@ -192,7 +192,7 @@ def get_munge_external():
     munge_external = 'irods-externals-mungefs*'
     return munge_external
 
-def install_irods_packages(database_type, install_externals, irods_packages_directory, externals_directory, upgrade=False):
+def install_irods_packages(database_type, install_externals, irods_packages_directory, externals_directory=None, upgrade=False):
     if not upgrade:
         install_database = 'python install_database.py --database_type {0}'.format(database_type)
         subprocess.check_call(install_database, shell=True)
