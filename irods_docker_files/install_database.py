@@ -17,7 +17,7 @@ def install_oracle_dependencies_yum():
     os.mkdir(tar_dir)
     irods_python_ci_utilities.subprocess_get_output(['tar', '-xf', tar_file, '-C', tar_dir], check_rc=True)
     irods_python_ci_utilities.install_os_packages(['unixODBC'])
-    irods_python_ci_utilities.subprocess_get_output('rpm -i --nodeps {0}/*'.format(tar_dir), use_unsafe_shell=True, check_rc=True)
+    irods_python_ci_utilities.subprocess_get_output('rpm -i --nodeps {0}/*'.format(tar_dir), shell=True, check_rc=True)
     irods_python_ci_utilities.subprocess_get_output(['ln', '-s', '/usr/lib64/libodbcinst.so.2', '/usr/lib64/libodbcinst.so.1'], check_rc=True)
 
 def install_oracle_dependencies_apt():
@@ -123,7 +123,7 @@ def install_database(database):
         'Ubuntu': install_database_apt,
         'Centos': install_database_yum,
         'Centos linux': install_database_yum,
-        'Opensuse ': install_database_zypper,
+        'Opensuse': install_database_zypper,
     }
 
     try:

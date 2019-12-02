@@ -5,16 +5,11 @@ from __future__ import print_function
 import argparse
 import subprocess
 import sys
+import ci_utilities
+
 from subprocess import Popen, PIPE
 from docker_cmd_builder import DockerCommandsBuilder
 
-def get_build_tag(base_os, stage, build_id):
-    build_tag = base_os + '-' + stage + ':' + build_id
-    return build_tag
-
-def get_base_image(base_os, build_id):
-    base_image = base_os + ':' + build_id
-    return base_image
 
 def get_test_name_prefix(base_os, prefix):
     test_name_prefix = base_os + '-' + prefix
@@ -27,7 +22,7 @@ def install_irods(build_tag, base_image, database_type):
         run_build = subprocess.check_call(docker_cmd, shell = True)
 
 def run_tests(image_name, irods_repo, irods_commitish, build_dir, output_directory, database_type, test_parallelism, test_name_prefix, externals_dir):
-    run_tests_cmd = ['python run_tests_in_parallel.py --image_name {0} --jenkins_output {1} --test_name_prefix {2} -b {3} --database_type {4} --irods_repo {5} --irods_commitish {6} --test_parallelism {7} --externals_dir {8}'.format(image_name, output_directory, test_name_prefix, build_dir, database_type, irods_repo, irods_commitish, test_parallelism, externals_dir)]
+    run_tests_cmd = ['python run_tests_in_parallel.py --image_name {0} --jenkins_output {1} --test_name_prefix {2} -b {3} --database_type {4} --irods_repo {5} --irods_commitish {6} --test_parallelism {7} --externals_dir {8} --is_unit_test'.format(image_name, output_directory, test_name_prefix, build_dir, database_type, irods_repo, irods_commitish, test_parallelism, externals_dir)]
     run_tests_p = subprocess.check_call(run_tests_cmd, shell=True)
 
 def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo, plugin_commitish, passthru_args, output_directory, database_type, machine_name, externals_dir):
@@ -85,12 +80,12 @@ def main():
     
     args = parser.parse_args()
     build_tag = None
-    base_image = get_base_image(args.platform_target, args.build_id)
+    base_image = ci_utilities.get_base_image(args.platform_target, args.build_id)
 
     if not args.test_plugin:
-        build_tag = get_build_tag(args.platform_target, 'irods-install', args.build_id)
+        build_tag = ci_utilities.get_build_tag(args.platform_target, 'irods-install', args.build_id)
     else:
-        build_tag = get_build_tag(args.platform_target, 'plugin-install', args.build_id)
+        build_tag = ci_utilities.get_build_tag(args.platform_target, 'plugin-install', args.build_id)
     
     install_irods(build_tag, base_image, args.database_type)
     test_name_prefix = args.platform_target + '-' + args.test_name_prefix

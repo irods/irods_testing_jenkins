@@ -2,6 +2,7 @@ class DockerCommandsBuilder(object):
     def __init__(self):
         self.machine_name = None
         self.build_mount = None
+        self.upgrade_mount = None
         self.plugin_mount = None
         self.results_mount = None
         self.cgroup_mount = None
@@ -25,6 +26,9 @@ class DockerCommandsBuilder(object):
 
     def set_build_mount(self, build_mount):
         self.build_mount = build_mount
+
+    def set_upgrade_mount(self, upgrade_mount):
+        self.upgrade_mount = upgrade_mount
 
     def set_plugin_mount(self, plugin_mount):
         self.plugin_mount = plugin_mount
@@ -93,9 +97,10 @@ class DockerCommandsBuilder(object):
         self.set_plugin_commitish(plugin_commitish)
         self.set_passthru_args(passthru_args)
 
-    def core_constructor(self, machine_name, build_mount, results_mount, cgroup_mount, run_mount, externals_mount, mysql_mount, image_name, python_script, database_type, test_name, is_unit_test, database_machine, docker_socket):
+    def core_constructor(self, machine_name, build_mount, upgrade_mount, results_mount, cgroup_mount, run_mount, externals_mount, mysql_mount, image_name, python_script, database_type, test_name, is_unit_test, database_machine, docker_socket):
         self.set_machine_name(machine_name)
         self.set_build_mount(build_mount)
+        self.set_upgrade_mount(upgrade_mount)
         self.set_results_mount(results_mount)
         self.set_cgroup_mount(cgroup_mount)
         self.set_externals_mount(externals_mount)
@@ -116,8 +121,12 @@ class DockerCommandsBuilder(object):
                 '-v', self.build_mount,
                 '-v', self.results_mount,
                 '-v', self.cgroup_mount]
-        if not self.database_type == 'oracle':
-            cmd.extend(['--cap-add', 'SYS_ADMIN', '--device', '/dev/fuse', '--security-opt', 'apparmor:unconfined']) 
+        if self.plugin_mount is not None:
+            cmd.append('--privileged')
+        elif self.plugin_mount is None and not self.database_type == 'oracle':
+            cmd.extend(['--cap-add', 'SYS_ADMIN', '--device', '/dev/fuse', '--security-opt', 'apparmor:unconfined'])
+        if self.upgrade_mount is not None and not 'None' in self.upgrade_mount:
+            cmd.extend(['-v', self.upgrade_mount])
         if self.plugin_mount is not None:
             cmd.extend(['-v',self.plugin_mount])
         if self.run_mount is not None:
@@ -142,6 +151,8 @@ class DockerCommandsBuilder(object):
             cmd.extend(['--test_name', self.test_name])
         if self.is_unit_test:
             cmd.append('--unit_test')
+        if self.upgrade_mount is not None and not 'None' in self.upgrade_mount:
+            cmd.append('--upgrade_test')
         if self.externals_mount is not None and not 'None' in self.externals_mount:
             cmd.append('--install_externals')
         if self.plugin_mount is not None:
