@@ -20,8 +20,8 @@ def install_irods(build_tag, base_image, database_type):
         docker_cmd = ['docker build -t {0} -f Dockerfile.xe .'.format('oracle/database:11.2.0.2-xe')]
         run_build = subprocess.check_call(docker_cmd, shell = True)
 
-def run_tests(image_name, irods_repo, irods_commitish, build_dir, upgrade_packages_dir, output_directory, database_type, test_parallelism, test_name_prefix, externals_dir):
-    run_tests_cmd = ['python run_tests_in_parallel.py --image_name {0} --jenkins_output {1} --test_name_prefix {2} -b {3} --database_type {4} --irods_repo {5} --irods_commitish {6} --test_parallelism {7} --externals_dir {8} --upgrade_packages_dir {9}'.format(image_name, output_directory, test_name_prefix, build_dir, database_type, irods_repo, irods_commitish, test_parallelism, externals_dir, upgrade_packages_dir)]
+def run_tests(image_name, irods_repo, irods_sha, build_dir, upgrade_packages_dir, output_directory, database_type, test_parallelism, test_name_prefix, externals_dir):
+    run_tests_cmd = ['python run_tests_in_parallel.py --image_name {image_name} --jenkins_output {output_directory} --test_name_prefix {test_name_prefix} -b {build_dir} --database_type {database_type} --irods_repo {irods_repo} --irods_commitish {irods_sha} --test_parallelism {test_parallelism} --externals_dir {externals_dir} --upgrade_packages_dir {upgrade_packages_dir}'.format(**locals())]
     run_tests_p = subprocess.check_call(run_tests_cmd, shell=True)
 
 def main():
@@ -48,7 +48,8 @@ def main():
     test_name_prefix = args.platform_target + '-' + args.test_name_prefix
 
     print(args.externals_dir)
-    run_tests(build_tag, args.irods_repo, args.irods_commitish, args.irods_build_dir, args.upgrade_packages_dir, args.output_directory, args.database_type, args.test_parallelism, test_name_prefix, args.externals_dir)
+    irods_sha = ci_utilities.get_sha_from_commitish(args.irods_repo, args.irods_commitish)
+    run_tests(build_tag, args.irods_repo, irods_sha, args.irods_build_dir, args.upgrade_packages_dir, args.output_directory, args.database_type, args.test_parallelism, test_name_prefix, args.externals_dir)
 
 if __name__ == '__main__':
     main()

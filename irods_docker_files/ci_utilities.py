@@ -7,8 +7,25 @@ import platform
 import sys
 import json
 
+if sys.version_info < (3, 0):
+    from urlparse import urlparse
+else:
+    from urllib.parse import urlparse
+
+from github import Github
 from subprocess import Popen, PIPE
 
+# Dereference commitish (branch name, SHA, partial SHA, etc.) to a full SHA
+def get_sha_from_commitish(_repo, _commitish):
+    try:
+        repo = urlparse(_repo).path.strip('/')
+        sha = Github().get_repo(repo).get_commit(_commitish).sha
+        print('found [{_repo}@{_commitish}] as sha:{sha}'.format(**locals()))
+        return sha
+    except:
+        print("Error getting SHA from repo [{0}] for commitish [{1}]. Please make sure URL and commitish are correct.".format(_repo, _commitish))
+        print(sys.exc_info()[0], ': ', sys.exc_info()[1])
+        return _commitish
 
 def get_build_tag(base_os, stage, build_id):
     build_tag = base_os + '-' + stage + ':' + build_id

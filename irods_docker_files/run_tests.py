@@ -21,11 +21,11 @@ def install_irods(build_tag, base_image, database_type):
         docker_cmd = ['docker build -t {0} -f Dockerfile.xe .'.format('oracle/database:11.2.0.2-xe')]
         run_build = subprocess.check_call(docker_cmd, shell = True)
 
-def run_tests(image_name, irods_repo, irods_commitish, build_dir, output_directory, database_type, test_parallelism, test_name_prefix, externals_dir):
-    run_tests_cmd = ['python run_tests_in_parallel.py --image_name {0} --jenkins_output {1} --test_name_prefix {2} -b {3} --database_type {4} --irods_repo {5} --irods_commitish {6} --test_parallelism {7} --externals_dir {8} --is_unit_test'.format(image_name, output_directory, test_name_prefix, build_dir, database_type, irods_repo, irods_commitish, test_parallelism, externals_dir)]
+def run_tests(image_name, irods_repo, irods_sha, build_dir, output_directory, database_type, test_parallelism, test_name_prefix, externals_dir):
+    run_tests_cmd = ['python run_tests_in_parallel.py --image_name {image_name} --jenkins_output {output_directory} --test_name_prefix {test_name_prefix} -b {build_dir} --database_type {database_type} --irods_repo {irods_repo} --irods_commitish {irods_sha} --test_parallelism {test_parallelism} --externals_dir {externals_dir} --is_unit_test'.format(**locals())]
     run_tests_p = subprocess.check_call(run_tests_cmd, shell=True)
 
-def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo, plugin_commitish, passthru_args, output_directory, database_type, machine_name, externals_dir):
+def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo, plugin_sha, passthru_args, output_directory, database_type, machine_name, externals_dir):
     build_mount = irods_build_dir + ':/irods_build'
     results_mount = output_directory + ':/irods_test_env'
     plugin_mount = plugin_build_dir + ':/plugin_mount_dir'
@@ -36,14 +36,14 @@ def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo,
 
     if 'centos' in machine_name:
         centosCmdBuilder = DockerCommandsBuilder()
-        centosCmdBuilder.plugin_constructor(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, run_mount, externals_mount, image_name, 'install_and_test.py', database_type, plugin_repo, plugin_commitish, passthru_args)
+        centosCmdBuilder.plugin_constructor(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, run_mount, externals_mount, image_name, 'install_and_test.py', database_type, plugin_repo, plugin_sha, passthru_args)
         
         run_cmd = centosCmdBuilder.build_run_cmd()
         exec_cmd = centosCmdBuilder.build_exec_cmd()
         stop_cmd = centosCmdBuilder.build_stop_cmd()
     elif 'ubuntu' in machine_name:
         ubuntuCmdBuilder = DockerCommandsBuilder()
-        ubuntuCmdBuilder.plugin_constructor(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, None, externals_mount, image_name, 'install_and_test.py', database_type, plugin_repo, plugin_commitish, passthru_args)
+        ubuntuCmdBuilder.plugin_constructor(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, None, externals_mount, image_name, 'install_and_test.py', database_type, plugin_repo, plugin_sha, passthru_args)
         
         run_cmd = ubuntuCmdBuilder.build_run_cmd()
         exec_cmd = ubuntuCmdBuilder.build_exec_cmd()
@@ -56,6 +56,11 @@ def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo,
     exec_tests = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
     _eout, _eerr = exec_tests.communicate()
     _rc = exec_tests.returncode
+    if _rc != 0:
+        print('output from exec_tests...')
+        print('stdout:[' + str(_eout) + ']')
+        print('stderr:[' + str(_eerr) + ']')
+        print('return code:[' + str(_rc) + ']')
     stop_container = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
     print('return code --->>> ', _rc)
     sys.exit(_rc)
@@ -92,7 +97,8 @@ def main():
 
     if not args.test_plugin:
         print(args.externals_dir)
-        run_tests(build_tag, args.irods_repo, args.irods_commitish, args.irods_build_dir, args.output_directory, args.database_type, args.test_parallelism, test_name_prefix, args.externals_dir)
+        irods_sha = ci_utilities.get_sha_from_commitish(args.irods_repo, args.irods_commitish)
+        run_tests(build_tag, args.irods_repo, irods_sha, args.irods_build_dir, args.output_directory, args.database_type, args.test_parallelism, test_name_prefix, args.externals_dir)
     else:
         plugin_repo = args.plugin_repo
         plugin_repo_split = plugin_repo.split('/')
@@ -105,7 +111,8 @@ def main():
         else:
             machine_name = args.platform_target + '-' + plugin_name + '-' + args.build_id
 
-        run_plugin_tests(build_tag, args.irods_build_dir, args.plugin_build_dir, args.plugin_repo, args.plugin_commitish, args.passthrough_arguments, args.output_directory, args.database_type, machine_name, args.externals_dir)
+        plugin_sha = ci_utilities.get_sha_from_commitish(args.plugin_repo, args.plugin_commitish)
+        run_plugin_tests(build_tag, args.irods_build_dir, args.plugin_build_dir, args.plugin_repo, plugin_sha, args.passthrough_arguments, args.output_directory, args.database_type, machine_name, args.externals_dir)
 
 if __name__ == '__main__':
     main()

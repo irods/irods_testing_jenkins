@@ -1,16 +1,15 @@
 #!/usr/bin/python
 from __future__ import print_function
-
-import argparse
-import os
-import sys
-import irods_python_ci_utilities
-import subprocess
-import shutil
-import time
-import ci_utilities
 from subprocess import Popen, PIPE
 
+import argparse
+import ci_utilities
+import irods_python_ci_utilities
+import os
+import shutil
+import subprocess
+import sys
+import time
 
 def get_irods_packages_directory():
     return '/irods_build/' + irods_python_ci_utilities.get_irods_platform_string()
@@ -46,7 +45,8 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
         irods_python_ci_utilities.subprocess_get_output(['apt-get', 'update'], check_rc=True)
     _git_repo = git_repo.split('/')
     plugin_name = _git_repo[len(_git_repo) - 1]
-    git_checkout_dir = irods_python_ci_utilities.git_clone(git_repo, git_commitish)
+    git_sha = ci_utilities.get_sha_from_commitish(git_repo, git_commitish)
+    git_checkout_dir = irods_python_ci_utilities.git_clone(git_repo, git_sha)
     output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(), plugin_name)
     plugin_build_dir = '/plugin_mount_dir/{0}'.format(plugin_name)
     if install_externals:

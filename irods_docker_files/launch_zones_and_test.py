@@ -52,6 +52,11 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, container_name):
     exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
     _eout, _eerr = exec_proc.communicate()
     _rc = exec_proc.returncode
+    if _rc != 0:
+        print('output from exec_proc...')
+        print('stdout:[' + str(_eout) + ']')
+        print('stderr:[' + str(_eerr) + ']')
+        print('return code:[' + str(_rc) + ']')
     # stop the container
     stop_proc = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
     return _rc
