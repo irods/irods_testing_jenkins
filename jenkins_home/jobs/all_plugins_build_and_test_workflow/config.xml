@@ -1,10 +1,10 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.32">
+<flow-definition plugin="workflow-job@2.36">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.29">
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.31">
       <autoRebuild>false</autoRebuild>
       <rebuildDisabled>false</rebuildDisabled>
     </com.sonyericsson.rebuild.RebuildSettings>
@@ -43,22 +43,52 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.64">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.76">
     <script>node {
      def build_id = env.BUILD_ID
      if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
          build_id = PARAMETER_PARENT_JOB_ID
      }
      parallel(
-        &apos;build_curl&apos;: {build(job: &apos;curl-plugin-build-and-test-workflow&apos;,
+        &apos;build_audit_amqp&apos;: {build(job: &apos;amqp-audit-plugin-build-and-test-workflow&apos;,
                               parameters: [[$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
-                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
                                            [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: build_id],
                                            [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR],
                                            [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]])},
         &apos;build_collection_mtime&apos;: {build(job: &apos;collection-mtime-plugin-build-and-test-workflow&apos;,
                               parameters: [[$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
-                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: build_id],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]])},
+        &apos;build_curl&apos;: {build(job: &apos;curl-plugin-build-and-test-workflow&apos;,
+                              parameters: [[$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: build_id],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]])},
+        &apos;build_kerberos&apos;: {build(job: &apos;kerberos-auth-plugin-build-and-test-workflow&apos;,
+                              parameters: [[$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: build_id],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]])},
+        &apos;build_python&apos;: {build(job: &apos;rule-engine-plugin-python-build-test-workflow&apos;,
+                              parameters: [[$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: build_id],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]])},
+        &apos;build_s3&apos;: {build(job: &apos;s3-resource-plugin-build-and-test-workflow&apos;,
+                              parameters: [[$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: build_id],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]])},
+        &apos;build_storage_tiering&apos;: {build(job: &apos;storage-tiering-plugin-build-and-test-workflow&apos;,
+                              parameters: [[$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
+                                           [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
                                            [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: build_id],
                                            [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR],
                                            [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]])}
