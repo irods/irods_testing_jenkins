@@ -6,13 +6,14 @@ from multiprocessing import Pool
 from urlparse import urlparse
 from docker_cmd_builder import DockerCommandsBuilder
 
+import argparse
+import ci_utilities
+import json
 import os
+import requests
+import subprocess
 import sys
 import time
-import argparse
-import json
-import subprocess
-import requests
 
 def create_network(network_name):
     docker_cmd = ['docker', 'network', 'create', '--attachable', network_name]
@@ -23,9 +24,10 @@ def connect_to_network(machine_name, alias_name, network_name):
     proc = Popen(network_cmd, stdout=PIPE, stderr=PIPE)
     _out, _err = proc.communicate()
 
-def download_list_of_tests(irods_repo, irods_commitish, relative_path):
+def download_list_of_tests(irods_repo, irods_sha, relative_path):
     url = urlparse(irods_repo)
-    tests_list_url = 'https://raw.github.com' + url.path + '/' + irods_commitish + '/' + relative_path
+
+    tests_list_url = 'https://raw.github.com' + url.path + '/' + irods_sha + '/' + relative_path
     response = requests.get(tests_list_url)
 
     print('test list url => {0}'.format(tests_list_url))
@@ -61,11 +63,10 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, container_name, databa
         if _running:
             connect_to_network(database_container, 'oracle.example.org', network_name)
 
-    _rrc = run_proc.returncode
     # execute a command in the running container
     exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
     _eout, _eerr = exec_proc.communicate()
-    _rc = exec_proc.returncode
+    _exec_rc = exec_proc.returncode
     # stop the container
     stop_proc = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
     if database_container is not None:
@@ -73,7 +74,7 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, container_name, databa
         Popen(database_stop, stdout=PIPE, stderr=PIPE).wait()
         Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE).wait()
 
-    return _rc
+    return _exec_rc
 
 def get_docker_cmd(test, run_cmd, exec_cmd, stop_cmd, container_name, database_container, network_name):
     docker_cmd = {'test_name': test,
@@ -149,11 +150,12 @@ def main():
 
     # Add unit-test commands to the list.
     docker_cmds_list = []
-    test_list = download_list_of_tests(args.irods_repo, args.irods_commitish, 'unit_tests/unit_tests_list.json')
+    irods_sha = ci_utilities.get_sha_from_commitish(args.irods_repo, args.irods_commitish)
+    test_list = download_list_of_tests(args.irods_repo, irods_sha, 'unit_tests/unit_tests_list.json')
     docker_cmds_list.extend(to_docker_commands(test_list, args, args.is_unit_test))
 
     # Add core-test commands to the list.
-    test_list = download_list_of_tests(args.irods_repo, args.irods_commitish, 'scripts/core_tests_list.json')
+    test_list = download_list_of_tests(args.irods_repo, irods_sha, 'scripts/core_tests_list.json')
     docker_cmds_list.extend(to_docker_commands(test_list, args))
 
     print(docker_cmds_list)

@@ -33,6 +33,8 @@ RUN yum -y update && yum clean all &&\
     yum -y install python-pip git net-tools && \
     yum clean all
 
+RUN pip install --ignore-installed pygithub
+
 RUN yum -y install yum-utils device-mapper-persistent-data lvm2 rsyslog
 
 RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo

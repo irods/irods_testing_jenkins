@@ -8,11 +8,11 @@ import subprocess
 import sys
 from subprocess import Popen, PIPE
 
-def build_externals_in_containers(base_os, build_id, externals_repo, externals_commitish, output_directory, machine_name):
+def build_externals_in_containers(base_os, build_id, externals_repo, externals_sha, output_directory, machine_name):
     build_tag = base_os + '-externals-build:' + build_id
     print(build_tag)
     base_image = base_os + ':' + build_id 
-    docker_cmd = ['docker build -t {0} --build-arg base_image={1} --build-arg arg_externals_repo={2} --build-arg arg_externals_commitish={3} -f Dockerfile.externals .'.format(build_tag, base_image, externals_repo, externals_commitish)] 
+    docker_cmd = ['docker build -t {build_tag} --build-arg base_image={base_image} --build-arg arg_externals_repo={externals_repo} --build-arg arg_externals_commitish={externals_sha} -f Dockerfile.externals .'.format(**locals())] 
     print(docker_cmd)
     run_build = subprocess.check_call(docker_cmd, shell=True)
     externals_build_dir = '/{0}/{1}'.format(output_directory, 'irods-externals')
@@ -32,6 +32,11 @@ def save_externals_build(image_name, output_directory, machine_name):
     save_build = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
     _sout, _serr = save_build.communicate()
     rc = save_build.returncode
+    if rc != 0:
+        print('output from save_build...')
+        print('stdout:[' + str(_sout) + ']')
+        print('stderr:[' + str(_serr) + ']')
+        print('return code:[' + str(rc) + ']')
     stop = Popen(stop_cmd, stdout=PIPE, stderr=PIPE).wait()
     sys.exit(rc)
 
@@ -45,7 +50,8 @@ def main():
 
     args = parser.parse_args()
     machine_name = args.platform_target + '-externals-' + args.build_id
-    build_externals_in_containers(args.platform_target, args.build_id, args.externals_repo, args.externals_commitish, args.output_directory, machine_name)
+    externals_sha = ci_utilities.get_sha_from_commitish(args.externals_repo, args.externals_commitish)
+    build_externals_in_containers(args.platform_target, args.build_id, args.externals_repo, externals_sha, args.output_directory, machine_name)
    
 if __name__ == '__main__':
     main()
