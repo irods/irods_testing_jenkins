@@ -45,7 +45,7 @@ RUN yum -y install initscripts && yum clean all
 
 RUN yum -y install fuse fuse-devel
 
-RUN cd /tmp && git clone -b dockerize https://github.com/jassigill2000/irods_python_ci_utilities && \
+RUN cd /tmp && git clone https://github.com/irods/irods_python_ci_utilities && \
     cd irods_python_ci_utilities && python setup.py install
 
 ENV IRODS_BUILD_DIRECTORY=/irods_build

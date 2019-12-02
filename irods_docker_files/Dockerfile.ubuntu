@@ -26,7 +26,7 @@ RUN python -m easy_install --upgrade pyOpenSSL
 RUN python -m easy_install --upgrade cryptography
 RUN apt-get update
 
-RUN cd /tmp && git clone -b dockerize https://github.com/jassigill2000/irods_python_ci_utilities && \
+RUN cd /tmp && git clone https://github.com/irods/irods_python_ci_utilities && \
     cd irods_python_ci_utilities && python setup.py install 
 
 ENV IRODS_BUILD_DIRECTORY=/irods_build
