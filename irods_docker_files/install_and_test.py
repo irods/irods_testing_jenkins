@@ -15,12 +15,11 @@ from subprocess import Popen, PIPE
 def get_irods_packages_directory():
     return '/irods_build/' + irods_python_ci_utilities.get_irods_platform_string()
 
+def get_upgrade_packages_directory():
+    return '/upgrade_dir/' + irods_python_ci_utilities.get_irods_platform_string()
+
 def get_externals_directory():
     return '/irods_externals'
-
-def get_munge_external():
-    munge_external = 'irods-externals-mungefs*'
-    return munge_external
 
 def setup_irods(database_type, database_machine):
     if database_type == 'postgres':
@@ -70,9 +69,10 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
     print(cmd)
     return irods_python_ci_utilities.subprocess_get_output(cmd, cwd=git_checkout_dir, check_rc=True)
 
-def run_test(test_name, output_root_directory, database_type):
+def run_test(test_name, database_type):
     try:
         test_output_file = '/var/lib/irods/log/test_output.log'
+
         if database_type == 'oracle':
             rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'cd scripts; export PATH=/opt/irods-externals/mungefs1.0.2-0/usr/bin:$PATH; python2 run_tests.py --xml_output --run_s={0} 2>&1 | tee {1}; exit $PIPESTATUS'.format(test_name, test_output_file)])
         else:
@@ -100,6 +100,7 @@ def run_unit_test(test_name):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test_plugin', action='store_true', default=False)
+    parser.add_argument('--upgrade_test', action='store_true', default=False)
     parser.add_argument('--install_externals', action='store_true', default=False)
     parser.add_argument('-d', '--database_type', default='postgres', help='database type', required=True)
     parser.add_argument('--database_machine', help='oracle database container name', default=None)
@@ -115,10 +116,13 @@ def main():
 
     setup_irods(args.database_type, args.database_machine)
 
+    if args.upgrade_test:
+        ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory())
+    
     if args.unit_test:
         sys.exit(run_unit_test(args.test_name))
     elif not args.test_plugin:    
-        rc = run_test(args.test_name, get_irods_packages_directory(), args.database_type)
+        rc = run_test(args.test_name, args.database_type)
         sys.exit(rc)
     else:
         rc, stdout, stderr = checkout_git_repo_and_run_test_hook(args.plugin_repo, args.plugin_commitish, args.passthrough_arguments, args.install_externals)

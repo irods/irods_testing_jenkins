@@ -7,21 +7,14 @@ import subprocess
 import json
 import sys
 import time
+import ci_utilities
 
 from subprocess import Popen, PIPE
 from multiprocessing import Pool
 
-def get_build_tag(base_os, stage, build_id):
-    build_tag = base_os + '-' + stage + ':' + build_id
-    return build_tag
-
 def get_network_name(base_os, build_id):
     network_name = base_os + '_topo_net_' + build_id
     return network_name
-
-def get_base_image(base_os, build_id):
-    base_image = base_os + ':' + build_id
-    return base_image
 
 def get_test_name_prefix(base_os, prefix):
     test_name_prefix = base_os + '-' + prefix
@@ -57,14 +50,14 @@ def install_irods(build_tag, base_image, install_database):
     run_build = subprocess.check_call(docker_cmd, shell = True)
 
 def build_topo_containers(platform_target, build_id, irods_build_dir, test_name_prefix, output_directory, database_type, providers, consumers, test_type, test_name):
-    base_image = get_base_image(platform_target, build_id)
-    provider_tag = get_build_tag(platform_target, 'topo_provider', build_id)
+    base_image = ci_utilities.get_base_image(platform_target, build_id)
+    provider_tag = ci_utilities.get_build_tag(platform_target, 'topo_provider', build_id)
     install_irods(provider_tag, base_image, 'True')
     consumer_tag_list=[]
     for x in range(consumers):
         consumer_id = x + 1
         stage = 'topo_consumer_' + str(consumer_id)
-        consumer_tag = get_build_tag(platform_target, stage, build_id)
+        consumer_tag = ci_utilities.get_build_tag(platform_target, stage, build_id)
         install_irods(consumer_tag, base_image, 'False')
         consumer_tag_list.append(consumer_tag)
 

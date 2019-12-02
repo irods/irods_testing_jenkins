@@ -89,6 +89,11 @@ def get_docker_cmd(test, run_cmd, exec_cmd, stop_cmd, container_name, database_c
 def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
     docker_cmds_list = []
     build_mount = cmd_line_args.build_dir + ':/irods_build'
+    if cmd_line_args.upgrade_packages_dir == None:
+        upgrade_packages_dir = 'None'
+    else:
+        upgrade_packages_dir = cmd_line_args.upgrade_packages_dir
+    upgrade_mount = upgrade_packages_dir + ':/upgrade_dir'
     results_mount = cmd_line_args.jenkins_output + '/' + cmd_line_args.database_type + ':/irods_test_env'
     cgroup_mount = '/sys/fs/cgroup:/sys/fs/cgroup:ro'
     run_mount = '/tmp/$(mktemp -d):/run'
@@ -107,14 +112,14 @@ def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
 
         if 'centos' in cmd_line_args.image_name:
             centosCmdBuilder = DockerCommandsBuilder()
-            centosCmdBuilder.core_constructor(container_name, build_mount, results_mount, cgroup_mount, None, externals_mount, None, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, is_unit_test, database_container, docker_socket)
+            centosCmdBuilder.core_constructor(container_name, build_mount, upgrade_mount, results_mount, cgroup_mount, None, externals_mount, None, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, is_unit_test, database_container, docker_socket)
             run_cmd = centosCmdBuilder.build_run_cmd()
             exec_cmd = centosCmdBuilder.build_exec_cmd()
             stop_cmd = centosCmdBuilder.build_stop_cmd()
             docker_cmd = get_docker_cmd(test, run_cmd, exec_cmd, stop_cmd, container_name, database_container, network_name)
         elif 'ubuntu' in cmd_line_args.image_name:
             ubuntuCmdBuilder = DockerCommandsBuilder()
-            ubuntuCmdBuilder.core_constructor(container_name, build_mount, results_mount, cgroup_mount, None, externals_mount, mysql_mount, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, is_unit_test, database_container, docker_socket)
+            ubuntuCmdBuilder.core_constructor(container_name, build_mount, upgrade_mount, results_mount, cgroup_mount, None, externals_mount, mysql_mount, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, is_unit_test, database_container, docker_socket)
 
             run_cmd = ubuntuCmdBuilder.build_run_cmd()
             exec_cmd = ubuntuCmdBuilder.build_exec_cmd()
@@ -135,15 +140,17 @@ def main():
     parser.add_argument('-b', '--build_dir',  help='irods build directory', required=True)
     parser.add_argument('--externals_dir', help='externals build directory', default=None)
     parser.add_argument('-d', '--database_type', default='postgres', help='database type', required=True)
+    parser.add_argument('--upgrade_packages_dir', required=False, default=None)
     parser.add_argument('--irods_repo', type=str, required=True)
     parser.add_argument('--irods_commitish', type=str, required=True)
     parser.add_argument('--test_parallelism', type=str, default='4', required=True)
+    parser.add_argument('--is_unit_test', action='store_true', default=False)
     args = parser.parse_args()
 
     # Add unit-test commands to the list.
     docker_cmds_list = []
     test_list = download_list_of_tests(args.irods_repo, args.irods_commitish, 'unit_tests/unit_tests_list.json')
-    docker_cmds_list.extend(to_docker_commands(test_list, args, is_unit_test=True))
+    docker_cmds_list.extend(to_docker_commands(test_list, args, args.is_unit_test))
 
     # Add core-test commands to the list.
     test_list = download_list_of_tests(args.irods_repo, args.irods_commitish, 'scripts/core_tests_list.json')
