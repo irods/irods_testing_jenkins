@@ -52,6 +52,7 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, container_name, databa
     run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
     _out, _err = run_proc.communicate()
     if database_container is not None:
+        create_network(network_name)
         _icat_running = is_container_running(container_name)
         if _icat_running:
             connect_to_network(container_name, 'icat.example.org', network_name)
@@ -109,7 +110,6 @@ def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
         if cmd_line_args.database_type == 'oracle':
             database_container = cmd_line_args.test_name_prefix + '_' + test + '_' + cmd_line_args.database_type + '-database'
             network_name = cmd_line_args.test_name_prefix + '-' + cmd_line_args.database_type + '-' + test
-            create_network(network_name)
 
         if 'centos' in cmd_line_args.image_name:
             centosCmdBuilder = DockerCommandsBuilder()
