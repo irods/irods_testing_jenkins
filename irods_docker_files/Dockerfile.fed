@@ -18,7 +18,7 @@ COPY install_externals.py /install_externals.py
 COPY other_zone.input /tmp/other_zone.input
 COPY zones.json /tmp/zones.json
 COPY get_irods_version.py /
-COPY ci_utilities.py /
+COPY ci_utilities.py /ci_utilities.py
 
 ADD run_tests_in_zone.py /
 RUN chmod u+x /run_tests_in_zone.py

@@ -7,6 +7,7 @@ import subprocess
 import json
 import sys
 import time
+import ci_utilities
 
 from subprocess import Popen, PIPE
 from multiprocessing import Pool
@@ -77,12 +78,8 @@ def build_zones(platform_target, build_id, irods_build_dir, test_name_prefix, ou
 
     network_name = get_network_name(platform_target, build_id)
 
-    create_network(network_name)
+    ci_utilities.create_network(network_name)
     create_federation(federation_tag_list, network_name, test_name_prefix, output_directory, database_type, irods_build_dir, platform_target, test_type, test_name)
-
-def create_network(network_name):
-    docker_cmd = ['docker', 'network', 'create', '--attachable', network_name]
-    network = subprocess.check_call(docker_cmd)
 
 def create_federation(federation_tag_list, network_name, test_name_prefix, output_directory, database_type, irods_build_dir, platform_target, test_type, test_name):
     docker_cmds_list = []
@@ -126,8 +123,8 @@ def check_fed_state(machine_list, network_name, container_error_codes):
             if ec['error_code'] != 0 and ec['zone_name'] == 'otherZone':
                 failures.append(ec['zone_name'])
 
-    rm_network = Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE)
-    rm_network.wait()
+    ci_utilities.delete_topo_network(network_name)
+
     if len(failures) > 0:
         sys.exit(1)
 
