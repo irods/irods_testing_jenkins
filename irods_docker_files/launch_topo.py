@@ -46,6 +46,7 @@ def run_command_in_container(exec_cmd, stop_cmd, container_name):
         print('stdout:[' + str(_out) + ']')
         print('stderr:[' + str(_err) + ']')
         print('return code:[' + str(_rc) + ']')
+
     stop_proc = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
     return _rc
 
@@ -66,13 +67,8 @@ def build_topo_containers(platform_target, build_id, irods_build_dir, test_name_
         consumer_tag_list.append(consumer_tag)
 
     network_name = get_network_name(platform_target, build_id)
-
-    create_topo_network(network_name)
+    ci_utilities.create_topo_network(network_name)
     create_topology(provider_tag, consumer_tag_list, network_name, test_name_prefix, output_directory, database_type, irods_build_dir, platform_target, test_type, test_name)
-
-def create_topo_network(network_name):
-    docker_cmd = ['docker', 'network', 'create', '--attachable', network_name]
-    network = subprocess.check_call(docker_cmd)
 
 def create_topology(provider_tag, consumer_tag_list, network_name, test_name_prefix, output_directory, database_type, irods_build_dir, platform_target, test_type, test_name):
     docker_run_list = []
@@ -123,24 +119,23 @@ def create_topology(provider_tag, consumer_tag_list, network_name, test_name_pre
     containers = [{'test_type': docker_cmd['test_type'], 'resource_type':docker_cmd['resource_type'], 'proc': run_pool.apply_async(run_command_in_container, (docker_cmd['exec_cmd'], docker_cmd['stop_cmd'], docker_cmd['container_name']))} for docker_cmd in docker_cmds_list]
     container_error_codes = [{'test_type': c['test_type'], 'resource_type': c['resource_type'],'error_code': c['proc'].get()} for c in containers]
     #print(container_error_codes)
+
+    ci_utilities.delete_topo_network(network_name)
     check_topo_state(machine_list, network_name, container_error_codes)
 
-    #sys.exit(1)
-
 def check_topo_state(machine_list, network_name, container_error_codes):
+    print("check_topo_state")
+
     failures = []
     for machine_name in machine_list:
         for ec in container_error_codes:
             if ec['error_code'] != 0 and ec['resource_type'] == 'provider' and ec['test_type'] == 'topology_icat':
                 failures.append(ec['resource_type'])
     
-    rm_network = Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE)
-    rm_network.wait()
     if len(failures) > 0:
         sys.exit(1)
 
     sys.exit(0)
-
 
 def main():
     parser = argparse.ArgumentParser(description='Run tests in os-containers')
@@ -162,7 +157,6 @@ def main():
 
     build_topo_containers(args.platform_target, args.build_id, args.irods_build_dir, args.test_name_prefix, args.output_directory, args.database_type, args.providers, args.consumers, args.test_type, args.specific_test)
 
-        
 if __name__ == '__main__':
     main()
 

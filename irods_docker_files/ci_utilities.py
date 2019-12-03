@@ -311,3 +311,20 @@ stdout: {3}
 stderr: {4}
 '''.format(args, kwargs, p.returncode, out, err))
     return p.returncode, out, err
+
+def create_topo_network(network_name):
+    check_network = Popen(['docker', 'network', 'ls'], stdout=PIPE, stderr=PIPE)
+    _out, _err = check_network.communicate()
+    if not network_name in _out:
+        docker_cmd = ['docker', 'network', 'create', '--attachable', network_name]
+        network = subprocess.check_call(docker_cmd)
+
+def delete_topo_network(network_name):
+    delete = False
+    while not delete:
+        rm_network = Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE)
+        _nout, _nerr = rm_network.communicate()
+        if 'error' in _nerr:
+            time.sleep(1)
+        else:
+            delete = True
