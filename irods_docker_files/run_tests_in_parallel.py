@@ -151,8 +151,9 @@ def main():
     # Add unit-test commands to the list.
     docker_cmds_list = []
     irods_sha = ci_utilities.get_sha_from_commitish(args.irods_repo, args.irods_commitish)
-    test_list = download_list_of_tests(args.irods_repo, irods_sha, 'unit_tests/unit_tests_list.json')
-    docker_cmds_list.extend(to_docker_commands(test_list, args, args.is_unit_test))
+    if args.is_unit_test:
+        test_list = download_list_of_tests(args.irods_repo, irods_sha, 'unit_tests/unit_tests_list.json')
+        docker_cmds_list.extend(to_docker_commands(test_list, args, args.is_unit_test))
 
     # Add core-test commands to the list.
     test_list = download_list_of_tests(args.irods_repo, irods_sha, 'scripts/core_tests_list.json')
