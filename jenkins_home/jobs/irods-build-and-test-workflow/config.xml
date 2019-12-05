@@ -46,6 +46,11 @@
           <defaultValue>true</defaultValue>
         </hudson.model.BooleanParameterDefinition>
         <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_CORE_UNIT_TESTS</name>
+          <description>Run unit tests for iRODS core.</description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
           <name>PARAMETER_RUN_PLUGIN_TESTS</name>
           <description></description>
           <defaultValue>true</defaultValue>
@@ -81,7 +86,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.76">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
     <script>node {
     def job_number = env.BUILD_ID
     def buildOutputDirectory = env.JENKINS_OUTPUT + &apos;/build_irods_on_base/&apos; + job_number
@@ -116,7 +121,8 @@
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_REPO&apos;, value: PARAMETER_IRODS_REPO],
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_PARALLELISM&apos;, value: PARAMETER_TEST_PARALLELISM],
-                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR]
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR],
+                    [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_UNIT_TESTS&apos;, value: PARAMETER_RUN_CORE_UNIT_TESTS]
                 ]
             }    
         }

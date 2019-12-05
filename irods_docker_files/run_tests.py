@@ -21,9 +21,26 @@ def install_irods(build_tag, base_image, database_type):
         docker_cmd = ['docker build -t {0} -f Dockerfile.xe .'.format('oracle/database:11.2.0.2-xe')]
         run_build = subprocess.check_call(docker_cmd, shell = True)
 
-def run_tests(image_name, irods_repo, irods_sha, build_dir, output_directory, database_type, test_parallelism, test_name_prefix, externals_dir):
-    run_tests_cmd = ['python run_tests_in_parallel.py --image_name {image_name} --jenkins_output {output_directory} --test_name_prefix {test_name_prefix} -b {build_dir} --database_type {database_type} --irods_repo {irods_repo} --irods_commitish {irods_sha} --test_parallelism {test_parallelism} --externals_dir {externals_dir} --is_unit_test'.format(**locals())]
-    run_tests_p = subprocess.check_call(run_tests_cmd, shell=True)
+def run_tests(image_name, irods_repo, irods_sha, build_dir, output_directory, database_type, test_parallelism, test_name_prefix, externals_dir, skip_unit_tests=False):
+    # build options list for run_tests_in_parallel
+    options = []
+    options.append(['--image_name', image_name])
+    options.append(['--jenkins_output', output_directory])
+    options.append(['--test_name_prefix', test_name_prefix])
+    options.append(['-b', build_dir])
+    options.append(['--database_type', database_type])
+    options.append(['--irods_repo', irods_repo])
+    options.append(['--irods_commitish', irods_sha])
+    options.append(['--test_parallelism', test_parallelism])
+    options.append(['--externals_dir', externals_dir])
+    if skip_unit_tests is False:
+        options.append(['--is_unit_test'])
+
+    run_tests_cmd_list = ['python', 'run_tests_in_parallel.py']
+    for option in options:
+        run_tests_cmd_list.extend(option)
+    print(run_tests_cmd_list)
+    run_tests_p = subprocess.check_call(run_tests_cmd_list, shell=True)
 
 def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo, plugin_sha, passthru_args, output_directory, database_type, machine_name, externals_dir):
     build_mount = irods_build_dir + ':/irods_build'
@@ -82,6 +99,7 @@ def main():
     parser.add_argument('--test_parallelism', default='4', help='The number of tests to run in parallel', required=False)
     parser.add_argument('-o', '--output_directory', type=str, required=True)
     parser.add_argument('--passthrough_arguments', type=str)
+    parser.add_argument('--skip_unit_tests', action='store_true', default=False)
     
     args = parser.parse_args()
     build_tag = None
@@ -98,7 +116,7 @@ def main():
     if not args.test_plugin:
         print(args.externals_dir)
         irods_sha = ci_utilities.get_sha_from_commitish(args.irods_repo, args.irods_commitish)
-        run_tests(build_tag, args.irods_repo, irods_sha, args.irods_build_dir, args.output_directory, args.database_type, args.test_parallelism, test_name_prefix, args.externals_dir)
+        run_tests(build_tag, args.irods_repo, irods_sha, args.irods_build_dir, args.output_directory, args.database_type, args.test_parallelism, test_name_prefix, args.externals_dir, args.skip_unit_tests)
     else:
         plugin_repo = args.plugin_repo
         plugin_repo_split = plugin_repo.split('/')
