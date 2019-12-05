@@ -92,7 +92,9 @@ def install_database_apt(database):
 
 def install_database_yum(database):
     if database == 'postgres':
+        Popen(['yum', 'update', '-y']).wait()
         irods_python_ci_utilities.install_os_packages(['postgresql-server', 'postgresql-contrib'])
+        Popen(['yum', 'clean', 'all']).wait()
         irods_python_ci_utilities.subprocess_get_output(['su', '-', 'postgres', '-c' '"initdb"'], check_rc=True)
         irods_python_ci_utilities.subprocess_get_output(['su', '-', 'postgres', '-c', "pg_ctl -D /var/lib/pgsql/data -l logfile start"], check_rc=True)
         status = 'no server running'
