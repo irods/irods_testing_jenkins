@@ -40,7 +40,7 @@ def run_tests(image_name, irods_repo, irods_sha, build_dir, output_directory, da
     for option in options:
         run_tests_cmd_list.extend(option)
     print(run_tests_cmd_list)
-    run_tests_p = subprocess.check_call(run_tests_cmd_list, shell=True)
+    run_tests_p = subprocess.check_call(run_tests_cmd_list)
 
 def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo, plugin_sha, passthru_args, output_directory, database_type, machine_name, externals_dir):
     build_mount = irods_build_dir + ':/irods_build'
