@@ -81,13 +81,14 @@ class DockerCommandsBuilder(object):
     def set_docker_socket(self, docker_socket):
         self.docker_socket = docker_socket
 
-    def plugin_constructor(self, machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, run_mount, externals_mount, image_name, python_script, database_type, plugin_repo, plugin_commitish, passthru_args):
+    def plugin_constructor(self, machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, mysql_mount, run_mount, externals_mount, image_name, python_script, database_type, plugin_repo, plugin_commitish, passthru_args):
         self.set_machine_name(machine_name)
         self.set_build_mount(build_mount)
         self.set_plugin_mount(plugin_mount)
         self.set_results_mount(results_mount)
         self.set_cgroup_mount(cgroup_mount)
         self.set_key_mount(key_mount)
+        self.set_mysql_mount(mysql_mount)
         self.set_externals_mount(externals_mount)
         self.set_image_name(image_name)
         self.set_run_mount(run_mount)

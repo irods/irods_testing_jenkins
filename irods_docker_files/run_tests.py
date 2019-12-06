@@ -47,20 +47,21 @@ def run_plugin_tests(image_name, irods_build_dir, plugin_build_dir, plugin_repo,
     results_mount = output_directory + ':/irods_test_env'
     plugin_mount = plugin_build_dir + ':/plugin_mount_dir'
     cgroup_mount = '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+    key_mount = '/projects/irods/vsphere-testing/externals/amazon_web_services-CI.keypair:/projects/irods/vsphere-testing/externals/amazon_web_services-CI.keypair'
+    mysql_mount = '/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz:/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz'
     run_mount = '/tmp/$(mktemp -d):/run'
     externals_mount = externals_dir + ':/irods_externals'
-    key_mount = '/projects/irods/vsphere-testing/externals/amazon_web_services-CI.keypair:/projects/irods/vsphere-testing/externals/amazon_web_services-CI.keypair'
 
     if 'centos' in machine_name:
         centosCmdBuilder = DockerCommandsBuilder()
-        centosCmdBuilder.plugin_constructor(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, run_mount, externals_mount, image_name, 'install_and_test.py', database_type, plugin_repo, plugin_sha, passthru_args)
+        centosCmdBuilder.plugin_constructor(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, None, run_mount, externals_mount, image_name, 'install_and_test.py', database_type, plugin_repo, plugin_sha, passthru_args)
         
         run_cmd = centosCmdBuilder.build_run_cmd()
         exec_cmd = centosCmdBuilder.build_exec_cmd()
         stop_cmd = centosCmdBuilder.build_stop_cmd()
     elif 'ubuntu' in machine_name:
         ubuntuCmdBuilder = DockerCommandsBuilder()
-        ubuntuCmdBuilder.plugin_constructor(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, None, externals_mount, image_name, 'install_and_test.py', database_type, plugin_repo, plugin_sha, passthru_args)
+        ubuntuCmdBuilder.plugin_constructor(machine_name, build_mount, plugin_mount, results_mount, cgroup_mount, key_mount, mysql_mount, None, externals_mount, image_name, 'install_and_test.py', database_type, plugin_repo, plugin_sha, passthru_args)
         
         run_cmd = ubuntuCmdBuilder.build_run_cmd()
         exec_cmd = ubuntuCmdBuilder.build_exec_cmd()

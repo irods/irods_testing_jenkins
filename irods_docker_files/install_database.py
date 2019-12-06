@@ -69,12 +69,10 @@ def install_database_apt(database):
     elif database == 'mysql':
         Popen(['/etc/init.d/apparmor', 'stop']).wait()
         Popen(['/etc/init.d/apparmor', 'teardown']).wait()
-        irods_python_ci_utilities.subprocess_get_output(['sudo', 'debconf-set-selections'], data='mysql-server mysql-server/root_password password password', check_rc=True)
-        irods_python_ci_utilities.subprocess_get_output(['sudo', 'debconf-set-selections'], data='mysql-server mysql-server/root_password_again password password', check_rc=True)
         Popen(['apt-get', 'update']).wait()
-        Popen(['apt-get', 'install', '-y', 'mysql-server']).wait()
-        irods_python_ci_utilities.subprocess_get_output(['su', '-', 'root', '-c', "echo '[mysqld]' > /etc/mysql/conf.d/irods.cnf"], check_rc=True)
-        irods_python_ci_utilities.subprocess_get_output(['su', '-', 'root', '-c', "echo 'log_bin_trust_function_creators=1' >> /etc/mysql/conf.d/irods.cnf"], check_rc=True)
+        my_env = os.environ.copy()
+        my_env["DEBIAN_FRONTEND"] = "noninteractive"
+        Popen(['apt-get', 'install', '-y', 'mysql-server'], env=my_env).wait()
         irods_python_ci_utilities.subprocess_get_output(['systemctl', 'restart', 'mysql'], check_rc=True)
         install_mysql_pcre(['libpcre3-dev', 'libmysqlclient-dev', 'build-essential', 'libtool', 'autoconf', 'unixodbc'], 'mysql')
         if irods_python_ci_utilities.get_distribution_version_major() == '16':
