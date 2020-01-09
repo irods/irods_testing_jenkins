@@ -67,9 +67,9 @@ def install_database_apt(database):
                 status = out
             time.sleep(1)
     elif database == 'mysql':
+        Popen(['apt-get', 'update']).wait()
         Popen(['/etc/init.d/apparmor', 'stop']).wait()
         Popen(['/etc/init.d/apparmor', 'teardown']).wait()
-        Popen(['apt-get', 'update']).wait()
         my_env = os.environ.copy()
         my_env["DEBIAN_FRONTEND"] = "noninteractive"
         Popen(['apt-get', 'install', '-y', 'mysql-server'], env=my_env).wait()
