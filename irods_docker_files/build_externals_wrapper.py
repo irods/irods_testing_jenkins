@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import ci_utilities
 import configuration
 import argparse
 import subprocess
