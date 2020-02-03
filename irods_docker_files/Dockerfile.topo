@@ -7,18 +7,18 @@ RUN pip install xmlrunner
 ARG database_type="postgres"
 ENV DATABASE=$database_type
 
-ARG arg_install_database="True"
-ENV INSTALL_DATABASE=${arg_install_database}
-
 ARG arg_jenkins_ouput=/worm_hole_missing
 ENV JENKINS_OUTPUT=${arg_jenkins_output}
 
-ADD install_database.py /
-RUN chmod u+x /install_database.py
+ADD setup_database_client.py /
+RUN chmod u+x /setup_database_client.py
 
 COPY install_externals.py /install_externals.py
 COPY ci_utilities.py /ci_utilities.py
-COPY irods_consumer.input /tmp/irods_consumer.input
+COPY enable_ssl.py /enable_ssl.py
+COPY irods_consumer.input /irods_consumer.input
+
+RUN mkdir ssl_keys
 
 ADD run_tests_in_zone.py /
 RUN chmod u+x /run_tests_in_zone.py
@@ -26,5 +26,5 @@ RUN chmod u+x /run_tests_in_zone.py
 ADD setup_topo.py /
 RUN chmod u+x /setup_topo.py
 
-VOLUME [ "/sys/fs/cgroup" ]
+VOLUME [ "/sys/fs/cgroup", "/var/run/docker.sock"]
 CMD ["/sbin/init"]
