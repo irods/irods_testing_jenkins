@@ -15,18 +15,23 @@ from subprocess import Popen, PIPE
 def get_irods_packages_directory():
     return '/irods_build/' + irods_python_ci_utilities.get_irods_platform_string()
 
+def get_externals_directory():
+    return '/irods_externals'
+
 def setup_irods(database_type, zone_name):
-    if database_type == 'postgres':
-        if zone_name == 'tempZone':
+    if zone_name == 'tempZone':
+        if database_type == 'postgres':
             p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
-        else:
-            p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /tmp/other_zone.input'], shell=True)
+        elif database_type == 'mysql':
+            p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_mysql.input'], shell=True)
+    else:
+            p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /psql_other_zone.input'], shell=True)
     print("irods setup successful")
 
 def configure_federation(zone_name):
     disable_client_server_negotiation = False
     irods_version = irods_python_ci_utilities.get_irods_version()
-    with open('/tmp/zones.json') as f:
+    with open('/zones.json') as f:
         zones = json.load(f)
     if irods_version >= (4,1):
         with open('/etc/irods/server_config.json') as f:
@@ -37,7 +42,7 @@ def configure_federation(zone_name):
                 json.dump(d, f, indent=4, sort_keys=True)
 
         configure_zones(d['federation'], disable_client_server_negotiation)
-        perform_test_setup(d['federation'][0]['zone_name'])
+        return(perform_test_setup(d['federation'][0]['zone_name']))
 
 def configure_zones(federation, disable_client_server_negotiation):
     for f in federation:
@@ -65,7 +70,7 @@ def perform_test_setup(zone_name):
     username = 'zonehopper#{0}'.format(zone_name)
     create_user(username)
     if irods_python_ci_utilities.get_irods_version() >= (4,):
-        create_passthrough_resource()
+        return(create_passthrough_resource())
 
 def create_user(username):
     irods_python_ci_utilities.subprocess_get_output(['su', '-', 'irods', '-c', 'iadmin mkuser {0} rodsuser'.format(username)], check_rc=True)
@@ -78,14 +83,10 @@ def create_passthrough_resource():
     leaf_resc_vault = os.path.join('/tmp', leaf_resc)
     irods_python_ci_utilities.subprocess_get_output(['su', '-', 'irods', '-c', 'iadmin mkresc {0} passthru'.format(passthrough_resc)], check_rc=True)
     irods_python_ci_utilities.subprocess_get_output(['su', '-', 'irods', '-c', 'iadmin mkresc {0} unixfilesystem {1}:{2}'.format(leaf_resc, hostname, leaf_resc_vault)], check_rc=True)
-    irods_python_ci_utilities.subprocess_get_output(['su', '-', 'irods', '-c', 'iadmin addchildtoresc {0} {1}'.format(passthrough_resc, leaf_resc)], check_rc=True)
+    _rc, _out, _err = irods_python_ci_utilities.subprocess_get_output(['su', '-', 'irods', '-c', 'iadmin addchildtoresc {0} {1}'.format(passthrough_resc, leaf_resc)])
+    print('create_passthrough_resource return code', _rc, type(_rc))
+    return _rc
 
-
-def connect_to_network(machine_name, alias_name, network_name):
-    network_cmd = ['docker', 'network', 'connect', '--alias', alias_name, network_name, machine_name]
-    proc = Popen(network_cmd, stdout=PIPE, stderr=PIPE)
-    _out, _err = proc.communicate()
-    
 def run_tests(zone_name, remote_zone, test_type, test_name):
     if zone_name == 'otherZone':
         remote_version_cmd = ['docker', 'exec', remote_zone, 'python', 'get_irods_version.py']
@@ -106,27 +107,27 @@ def run_tests(zone_name, remote_zone, test_type, test_name):
 def check_fed_state(machine_name):
     is_running = True
     while is_running:
-        cmd = ['docker', 'inspect', '--format', '{{.State.Running}}', machine_name]
+        cmd = ['ping', '-W', '10', '-c', '1', machine_name]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
         output, err = proc.communicate()
-        if 'Error: No such object' in err:
-            is_running = False
-            exit_code = ['docker', 'inspect', '--format', '{{.State.ExitCode}}', machine_name]
-            ec_proc = Popen(exit_code, stdout=PIPE, stderr=PIPE)
-            _out, _err = ec_proc.communicate()
-            _out_split = _out.split('/')
-            _ec = int(_out_split[0])
-            return _ec
-        time.sleep(1)
+        _rc = proc.returncode
+        if _rc != 0:
+            gather_logs()
+            sys.exit(_rc)
+
+def gather_logs():
+    import socket
+    output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(),socket.gethostname())
+    irods_python_ci_utilities.gather_files_satisfying_predicate('/var/lib/irods/log', output_directory, lambda x: True)
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--federation_name', type=str, required=True)
+    parser.add_argument('--federation_name', type=str, required=False)
     parser.add_argument('-d', '--database_type', default='postgres', help='database type', required=True)
+    parser.add_argument('--database_machine', help='database container name', default=None)
     parser.add_argument('--install_externals', action='store_true', default=False)
     parser.add_argument('--test_type', type=str)
     parser.add_argument('--test_name', type=str, default=None)
-    parser.add_argument('--network_name', type=str, required=True)
     parser.add_argument('--zone_name', type=str, required=True)
     parser.add_argument('--remote_zone', type=str, required=True)
     parser.add_argument('--alias_name', type=str, required=True)
@@ -134,16 +135,13 @@ def main():
     args = parser.parse_args()
    
     distribution = irods_python_ci_utilities.get_distribution()
-    ci_utilities.install_irods_packages(args.database_type, args.install_externals, get_irods_packages_directory())
+    ci_utilities.install_irods_packages(args.database_type, args.database_machine, args.install_externals, get_irods_packages_directory(), get_externals_directory(), is_provider=True)
 
-    connect_to_network(args.federation_name, args.alias_name, args.network_name)
     setup_irods(args.database_type, args.zone_name)
-    configure_federation(args.zone_name)
-    if args.zone_name == 'otherZone':
-        rc = run_tests(args.zone_name, args.remote_zone, args.test_type, args.test_name)
-        sys.exit(rc)
+    rc = configure_federation(args.zone_name)
+    if args.zone_name == 'tempZone':
+        check_fed_state(args.remote_zone)
     else:
-        rc = check_fed_state(args.remote_zone)
         sys.exit(rc)
 
 

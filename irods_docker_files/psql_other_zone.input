@@ -2,7 +2,7 @@
 
 
 
-localhost
+postgres.otherZone.example.org
 5432
 ICAT
 irods

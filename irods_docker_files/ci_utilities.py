@@ -6,6 +6,7 @@ import subprocess
 import platform
 import sys
 import json
+import time
 
 if sys.version_info < (3, 0):
     from urlparse import urlparse
@@ -27,8 +28,8 @@ def get_sha_from_commitish(_repo, _commitish):
         print(sys.exc_info()[0], ': ', sys.exc_info()[1])
         return _commitish
 
-def get_build_tag(base_os, stage, build_id):
-    build_tag = base_os + '-' + stage + ':' + build_id
+def get_build_tag(base_os, stage, database_type, build_id):
+    build_tag = base_os + '-' + stage + '-' + database_type + ':' + build_id
     return build_tag
 
 def get_base_image(base_os, build_id):
@@ -209,10 +210,14 @@ def get_munge_external():
     munge_external = 'irods-externals-mungefs*'
     return munge_external
 
-def install_irods_packages(database_type, install_externals, irods_packages_directory, externals_directory=None, upgrade=False):
-    if not upgrade:
-        install_database = 'python install_database.py --database_type {0}'.format(database_type)
-        subprocess.check_call(install_database, shell=True)
+def install_irods_packages(database_type, database_machine, install_externals, irods_packages_directory, externals_directory=None, upgrade=False, is_provider=False):
+    setup_database_client = 'python setup_database_client.py --database_type {0}'.format(database_type)
+    if upgrade:
+        #don't configure the database
+        pass
+    else:
+        if is_provider:
+            subprocess.check_call(setup_database_client, shell=True)
 
     if get_distribution() == 'Centos linux':
         subprocess_get_output(['rpm', '--rebuilddb'], check_rc=True)
@@ -239,16 +244,39 @@ def install_irods_packages(database_type, install_externals, irods_packages_dire
             raise RuntimeError('unhandled package name')
 
 def get_database_plugin(irods_packages_directory, database_type):
+    if database_type == 'mariadb':
+        database_type = 'mysql'
+
     package_filter = 'irods-database-plugin-' + database_type
     database_plugin_basename = filter(lambda x:package_filter in x, os.listdir(irods_packages_directory))[0]
     database_plugin = os.path.join(irods_packages_directory, database_plugin_basename)
     return database_plugin
 
-def upgrade(upgrade_packages_directory, database_type, install_externals, externals_directory):
+def setup_irods(database_type, database_machine=None):
+    if database_type == 'postgres':
+        subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
+    elif database_type == 'mysql':
+        subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_mysql.input'], shell=True)
+    elif database_type == 'oracle':
+        status = 'running'
+        while status == 'running':
+            status_cmd = ['docker', 'inspect', '--format', '{{.State.Health.Status}}', database_machine]
+            status_proc = Popen(status_cmd, stdout = PIPE, stderr=PIPE)
+            _out, _err = status_proc.communicate()
+            if 'healthy' in _out:
+                status = _out
+
+            time.sleep(1)
+
+        subprocess.check_call(['export LD_LIBRARY_PATH=/usr/lib/oracle/11.2/client64/lib:$LD_LIBRARY_PATH; export ORACLE_HOME=/usr/lib/oracle/11.2/client64; export PATH=$ORACLE_HOME/bin:$PATH; python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_oracle.input'], shell=True)
+    else:
+        print(database_type, ' not supported')
+
+def upgrade(upgrade_packages_directory, database_type, install_externals, externals_directory=None, is_provider=True):
     initial_version = get_irods_version()
     stop_server(initial_version)
     #upgrade packages
-    install_irods_packages(database_type, install_externals, upgrade_packages_directory, externals_directory, True)
+    install_irods_packages(database_type, install_externals, upgrade_packages_directory, externals_directory, upgrade = True, is_provider = is_provider)
     final_version = get_irods_version()
     upgrade_core_re(initial_version, final_version)
     stop_server(final_version)
@@ -311,20 +339,3 @@ stdout: {3}
 stderr: {4}
 '''.format(args, kwargs, p.returncode, out, err))
     return p.returncode, out, err
-
-def create_topo_network(network_name):
-    check_network = Popen(['docker', 'network', 'ls'], stdout=PIPE, stderr=PIPE)
-    _out, _err = check_network.communicate()
-    if not network_name in _out:
-        docker_cmd = ['docker', 'network', 'create', '--attachable', network_name]
-        network = subprocess.check_call(docker_cmd)
-
-def delete_topo_network(network_name):
-    delete = False
-    while not delete:
-        rm_network = Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE)
-        _nout, _nerr = rm_network.communicate()
-        if 'error' in _nerr:
-            time.sleep(1)
-        else:
-            delete = True
