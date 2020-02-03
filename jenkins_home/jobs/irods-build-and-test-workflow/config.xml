@@ -95,14 +95,14 @@
         b = build job: &quot;build_base_os&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: job_number]
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number]
             ]
     }
     stage(&quot;iRODS Build&quot;) {
         build job: &quot;build_irods_on_base&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: job_number],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_REPO&apos;, value: PARAMETER_IRODS_REPO],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_ICOMMANDS_REPO&apos;, value: PARAMETER_IRODS_ICOMMANDS_REPO],
@@ -115,7 +115,7 @@
                 build job: &quot;run_irods_tests&quot;, 
                 parameters: [
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
-                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: job_number],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_REPO&apos;, value: PARAMETER_IRODS_REPO],

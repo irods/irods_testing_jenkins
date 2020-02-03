@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.32">
+<flow-definition plugin="workflow-job@2.36">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -35,7 +35,7 @@
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>PARAMETER_PARENT_JOB_ID</name>
+          <name>PARAMETER_IMAGE_TAG</name>
           <description>this is either the job id or the tag for the base os images</description>
           <defaultValue></defaultValue>
           <trim>true</trim>
@@ -49,20 +49,17 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.70">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
     <script>node {
-     def build_id = env.BUILD_ID
-     if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
-         build_id = PARAMETER_PARENT_JOB_ID
-     }
-    def buildOutputDirectory = env.JENKINS_OUTPUT + &apos;/build_plugins_on_base/&apos; + build_id
+    def build_id = env.BUILD_ID
+    def buildOutputDirectory = env.JENKINS_OUTPUT + &apos;/build_plugins_on_base/&apos; + PARAMETER_IMAGE_TAG
     def message_brokers = [&apos;apache-activemq-5.13.2&apos;,&apos;apache-activemq-5.14.1&apos;,&apos;rabbitmq&apos;]
     def parallelTestBranches = [:]
     stage(&quot;Build Plugins on Base OS&quot;) {
         b = build job: &quot;build_plugins_on_base&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: build_id],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: PARAMETER_IMAGE_TAG],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_REPO&apos;, value: PARAMETER_PLUGIN_GIT_REPO],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR]
@@ -78,7 +75,7 @@
                 b = build job: &quot;run_plugin_tests&quot;,
                 parameters: [
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
-                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PARENT_JOB_ID&apos;, value: build_id],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: PARAMETER_IMAGE_TAG],
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_REPO&apos;, value: PARAMETER_PLUGIN_GIT_REPO],
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
                     [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR],

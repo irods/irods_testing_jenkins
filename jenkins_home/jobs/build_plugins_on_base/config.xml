@@ -1,10 +1,10 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.32">
+<flow-definition plugin="workflow-job@2.36">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.29">
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.31">
       <autoRebuild>false</autoRebuild>
       <rebuildDisabled>false</rebuildDisabled>
     </com.sonyericsson.rebuild.RebuildSettings>
@@ -17,7 +17,7 @@
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>PARAMETER_PARENT_JOB_ID</name>
+          <name>PARAMETER_IMAGE_TAG</name>
           <description>this is either the job id or the tag for the base os images</description>
           <defaultValue></defaultValue>
           <trim>false</trim>
@@ -43,13 +43,10 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.64">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
     <script>node {
      def build_id = env.BUILD_ID
-     if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
-         build_id = PARAMETER_PARENT_JOB_ID
-     }
-     def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + build_id
+     def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + PARAMETER_IMAGE_TAG
      def dockerfile_dir = env.GLOBAL_PARAMETER_DOCKER_REPO
      print(dockerfile_dir)
      dir(dockerfile_dir) {
@@ -58,7 +55,13 @@
              def parallelBranches = [:]
              for(int i = 0; i &lt; base_os.size(); i++) {
                 def os = base_os[i]
-                def build_cmd = &apos;python build_plugin_wrapper.py --platform_target &apos; + os + &apos; --build_id &apos; + build_id + &apos; --plugin_repo &apos; + PARAMETER_PLUGIN_GIT_REPO + &apos; --plugin_commitish &apos; + PARAMETER_PLUGIN_GIT_COMMITISH + &apos; --irods_packages_build_directory &apos; + PARAMETER_IRODS_BUILD_DIR +&apos; --output_directory &apos; + output_directory
+                def build_cmd = &apos;python build_plugin_wrapper.py --platform_target &apos; + os +
+                                &apos; --image_tag &apos; + PARAMETER_IMAGE_TAG +
+                                &apos; --build_id &apos; + build_id + 
+                                &apos; --plugin_repo &apos; + PARAMETER_PLUGIN_GIT_REPO + 
+                                &apos; --plugin_commitish &apos; + PARAMETER_PLUGIN_GIT_COMMITISH + 
+                                &apos; --irods_packages_build_directory &apos; + PARAMETER_IRODS_BUILD_DIR +
+                                &apos; --output_directory &apos; + output_directory
                 def branchName = os.split(&apos;:&apos;)[0]
                 parallelBranches[&quot;${branchName}&quot;] = {
                     sh build_cmd 

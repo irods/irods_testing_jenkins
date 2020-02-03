@@ -17,8 +17,8 @@
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>PARAMETER_PARENT_JOB_ID</name>
-          <description>Pass the parent job id </description>
+          <name>PARAMETER_IMAGE_TAG</name>
+          <description>Pass the image tag id/name</description>
           <defaultValue></defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
@@ -69,9 +69,6 @@
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
     <script>node {
      def build_id = env.BUILD_ID
-     if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
-         build_id = PARAMETER_PARENT_JOB_ID
-     }
      print(build_id)
      def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + build_id
      def dockerfile_dir = env.GLOBAL_PARAMETER_DOCKER_REPO
@@ -82,15 +79,16 @@
              for(int i = 0; i &lt; base_os.size(); i++) {
                 def os = base_os[i]
                 def run_cmd = &apos;python run_tests.py -p &apos; + os +
-                                                 &apos; -b &apos; + build_id +
-                                                 &apos; --test_name_prefix ${BUILD_TAG} &apos; +
-                                                 &apos;--irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR +
-                                                 &apos; -o &apos; + output_directory +
-                                                 &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE +
-                                                 &apos; --irods_repo &apos; + PARAMETER_IRODS_REPO +
-                                                 &apos; --irods_commitish &apos; + PARAMETER_IRODS_COMMITISH +
-                                                 &apos; --test_parallelism &apos; + PARAMETER_TEST_PARALLELISM +
-                                                 &apos; --externals_dir &apos; + PARAMETER_EXTERNALS_ROOT_DIR
+                              &apos; --image_tag &apos; + PARAMETER_IMAGE_TAG +
+                              &apos; -b &apos; + build_id +
+                              &apos; --test_name_prefix ${BUILD_TAG} &apos; +
+                              &apos;--irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR +
+                              &apos; -o &apos; + output_directory +
+                              &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE +
+                              &apos; --irods_repo &apos; + PARAMETER_IRODS_REPO +
+                              &apos; --irods_commitish &apos; + PARAMETER_IRODS_COMMITISH +
+                              &apos; --test_parallelism &apos; + PARAMETER_TEST_PARALLELISM +
+                              &apos; --externals_dir &apos; + PARAMETER_EXTERNALS_ROOT_DIR
                 if (PARAMETER_RUN_UNIT_TESTS == &quot;false&quot;) {
                     run_cmd = run_cmd + &apos; --skip_unit_tests&apos;
                 }
