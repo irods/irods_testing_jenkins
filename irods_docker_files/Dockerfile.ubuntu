@@ -4,7 +4,7 @@ FROM $base_image
 RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils && \
     apt-get install -y apt-transport-https wget lsb-release sudo make zip netcat && \
     apt-get install -y python python-psutil python-requests python-jsonschema && \
-    apt-get install -y python-pip git net-tools && \
+    apt-get install -y python-pip git net-tools iputils-ping && \
     pip install pygithub
 
 RUN pip install --upgrade pip
@@ -41,9 +41,3 @@ RUN DEBIAN_FRONTEND=noninteractive &&\
     chmod -R 775 $IRODS_TEST_RESULTS 
 
 RUN echo exit 0 > /usr/sbin/policy-rc.d
-
-RUN DEBIAN_FRONTEND=noninteractive &&\
-    apt-get install -y tzdata &&\
-    ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime &&\
-    dpkg-reconfigure --frontend noninteractive tzdata
-
