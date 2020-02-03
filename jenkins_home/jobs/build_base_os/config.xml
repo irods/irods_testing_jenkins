@@ -1,10 +1,10 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.31">
+<flow-definition plugin="workflow-job@2.36">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.29">
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.31">
       <autoRebuild>false</autoRebuild>
       <rebuildDisabled>false</rebuildDisabled>
     </com.sonyericsson.rebuild.RebuildSettings>
@@ -17,19 +17,19 @@
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>PARAMETER_PARENT_JOB_ID</name>
-          <description>Pass the parent job id </description>
+          <name>PARAMETER_IMAGE_TAG</name>
+          <description>Pass the parent job id or the container image tag number/name</description>
           <defaultValue></defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.62">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
     <script>node {
      def build_id = env.BUILD_ID
-     if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
-         build_id = PARAMETER_PARENT_JOB_ID
+     if(!PARAMETER_IMAGE_TAG.equals(&apos;&apos;)) {
+         build_id = PARAMETER_IMAGE_TAG
      }
      print(build_id)
      def dockerfile_dir = env.GLOBAL_PARAMETER_DOCKER_REPO

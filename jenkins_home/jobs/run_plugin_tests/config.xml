@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.32">
+<flow-definition plugin="workflow-job@2.36">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -17,8 +17,8 @@
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>PARAMETER_PARENT_JOB_ID</name>
-          <description>Pass the parent job id </description>
+          <name>PARAMETER_IMAGE_TAG</name>
+          <description>Pass the image tag id/name</description>
           <defaultValue></defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
@@ -67,14 +67,10 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.70">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
     <script>node {
      def build_id = env.BUILD_ID
-     if(!PARAMETER_PARENT_JOB_ID.equals(&apos;&apos;)) {
-         build_id = PARAMETER_PARENT_JOB_ID
-     }
-     
-     def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + build_id
+     def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + PARAMETER_IMAGE_TAG
      def dockerfile_dir = env.GLOBAL_PARAMETER_DOCKER_REPO
      dir(dockerfile_dir) {
          stage(&apos;Install And Run Tests&apos;) {
@@ -85,6 +81,7 @@
                 def run_cmd
                 if(!PARAMETER_ADDITIONAL_PASSTHRU_ARGS.equals(&apos;&apos;)) {
                     run_cmd = &apos;python run_tests.py --platform_target &apos; + os + 
+                              &apos; --image_tag &apos; + PARAMETER_IMAGE_TAG +
                               &apos; --build_id &apos; + build_id + 
                               &apos; --test_plugin --test_name_prefix ${BUILD_TAG}&apos;+
                               &apos; --irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR + 
@@ -97,6 +94,7 @@
                               &apos; --passthrough_arguments &quot;&apos; + PARAMETER_ADDITIONAL_PASSTHRU_ARGS + &apos;&quot;&apos;
                 } else {
                     run_cmd = &apos;python run_tests.py --platform_target &apos; + os +
+                              &apos; --image_tag &apos; + PARAMETER_IMAGE_TAG +
                               &apos; --build_id &apos; + build_id + 
                               &apos; --test_plugin --test_name_prefix ${BUILD_TAG}&apos; +
                               &apos; --irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR + 
