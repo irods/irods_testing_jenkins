@@ -8,21 +8,12 @@ from docker_cmd_builder import DockerCommandsBuilder
 
 import argparse
 import ci_utilities
+import docker_cmds_utilities
 import json
 import os
 import requests
 import subprocess
 import sys
-import time
-
-def create_network(network_name):
-    docker_cmd = ['docker', 'network', 'create', '--attachable', network_name]
-    network = subprocess.check_call(docker_cmd)
-
-def connect_to_network(machine_name, alias_name, network_name):
-    network_cmd = ['docker', 'network', 'connect', '--alias', alias_name, network_name, machine_name]
-    proc = Popen(network_cmd, stdout=PIPE, stderr=PIPE)
-    _out, _err = proc.communicate()
 
 def download_list_of_tests(irods_repo, irods_sha, relative_path):
     url = urlparse(irods_repo)
@@ -36,59 +27,8 @@ def download_list_of_tests(irods_repo, irods_sha, relative_path):
 
     return json.loads(response.text)
 
-def is_container_running(container_name):
-    _running = False
-    state_cmd = ['docker', 'inspect', '-f', '{{.State.Running}}', container_name]
-    while not _running:
-        state_proc = Popen(state_cmd, stdout=PIPE, stderr=PIPE)
-        _sout, _serr = state_proc.communicate()
-        if 'true' in _sout:
-            _running = True
-        time.sleep(1)
-    return _running
-
-def run_command_in_container(run_cmd, exec_cmd, stop_cmd, container_name, database_container, network_name):
-    # the docker run command (stand up a container)
-    run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
-    _out, _err = run_proc.communicate()
-    if database_container is not None:
-        create_network(network_name)
-        _icat_running = is_container_running(container_name)
-        if _icat_running:
-            connect_to_network(container_name, 'icat.example.org', network_name)
-
-        run_cmd = ['docker', 'run', '-d', '--rm',  '--name', database_container, '--shm-size=1g', '-e', 'ORACLE_PWD=testpassword', 'oracle/database:11.2.0.2-xe']
-        run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
-        _out, _err = run_proc.communicate()
-        _running = is_container_running(database_container)
-        if _running:
-            connect_to_network(database_container, 'oracle.example.org', network_name)
-
-    # execute a command in the running container
-    exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
-    _eout, _eerr = exec_proc.communicate()
-    _exec_rc = exec_proc.returncode
-    # stop the container
-    stop_proc = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
-    if database_container is not None:
-        database_stop = ['docker', 'stop', database_container]
-        Popen(database_stop, stdout=PIPE, stderr=PIPE).wait()
-        Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE).wait()
-
-    return _exec_rc
-
-def get_docker_cmd(test, run_cmd, exec_cmd, stop_cmd, container_name, database_container, network_name):
-    docker_cmd = {'test_name': test,
-                  'run_cmd': run_cmd,
-                  'exec_cmd': exec_cmd,
-                  'stop_cmd': stop_cmd,
-                  'container_name': container_name,
-                  'database_container': database_container,
-                  'network_name': network_name
-                 }
-    return docker_cmd
-
 def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
+    alias_name = 'icat.example.org'
     docker_cmds_list = []
     build_mount = cmd_line_args.build_dir + ':/irods_build'
     if cmd_line_args.upgrade_packages_dir == None:
@@ -97,38 +37,36 @@ def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
         upgrade_packages_dir = cmd_line_args.upgrade_packages_dir
     upgrade_mount = upgrade_packages_dir + ':/upgrade_dir'
     results_mount = cmd_line_args.jenkins_output + '/' + cmd_line_args.database_type + ':/irods_test_env'
-    cgroup_mount = '/sys/fs/cgroup:/sys/fs/cgroup:ro'
     run_mount = '/tmp/$(mktemp -d):/run'
-    docker_socket = '/var/run/docker.sock:/var/run/docker.sock'
     externals_mount = cmd_line_args.externals_dir + ':/irods_externals'
     mysql_mount = '/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz:/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz'
 
     for test in test_list:
-        container_name = cmd_line_args.test_name_prefix + '_' + cmd_line_args.database_type + '_' + test
+        container_name = cmd_line_args.test_name_prefix + '_' + test + '_' + cmd_line_args.database_type
         database_container = None
         network_name = None
-        if cmd_line_args.database_type == 'oracle':
-            database_container = cmd_line_args.test_name_prefix + '_' + test + '_' + cmd_line_args.database_type + '-database'
-            network_name = cmd_line_args.test_name_prefix + '-' + cmd_line_args.database_type + '-' + test
+
+        database_container = cmd_line_args.test_name_prefix + '_' + test + '_' + cmd_line_args.database_type + '-database'
+        network_name = cmd_line_args.test_name_prefix + '_' + cmd_line_args.database_type + '_' + test
 
         if 'centos' in cmd_line_args.image_name:
             centosCmdBuilder = DockerCommandsBuilder()
-            centosCmdBuilder.core_constructor(container_name, build_mount, upgrade_mount, results_mount, cgroup_mount, None, externals_mount, None, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, is_unit_test, database_container, docker_socket)
+            centosCmdBuilder.core_constructor(container_name, build_mount, upgrade_mount, results_mount, None, externals_mount, None, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, 'standalone_icat', is_unit_test, True, database_container)
             run_cmd = centosCmdBuilder.build_run_cmd()
             exec_cmd = centosCmdBuilder.build_exec_cmd()
             stop_cmd = centosCmdBuilder.build_stop_cmd()
-            docker_cmd = get_docker_cmd(test, run_cmd, exec_cmd, stop_cmd, container_name, database_container, network_name)
         elif 'ubuntu' in cmd_line_args.image_name:
             ubuntuCmdBuilder = DockerCommandsBuilder()
-            ubuntuCmdBuilder.core_constructor(container_name, build_mount, upgrade_mount, results_mount, cgroup_mount, None, externals_mount, mysql_mount, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, is_unit_test, database_container, docker_socket)
+            ubuntuCmdBuilder.core_constructor(container_name, build_mount, upgrade_mount, results_mount, None, externals_mount, mysql_mount, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, 'standalone_icat', is_unit_test, True, database_container)
 
             run_cmd = ubuntuCmdBuilder.build_run_cmd()
             exec_cmd = ubuntuCmdBuilder.build_exec_cmd()
             stop_cmd = ubuntuCmdBuilder.build_stop_cmd()
-            docker_cmd = get_docker_cmd(test, run_cmd, exec_cmd, stop_cmd, container_name, database_container, network_name)
         else:
             print('OS not supported')
 
+        extra_args = {'test_name': test}
+        docker_cmd = docker_cmds_utilities.get_docker_cmd(run_cmd, exec_cmd, stop_cmd, container_name, alias_name, database_container, cmd_line_args.database_type, network_name, extra_args)
         docker_cmds_list.append(docker_cmd)
 
     return docker_cmds_list
@@ -163,7 +101,7 @@ def main():
 
     run_pool = Pool(processes=int(args.test_parallelism))
 
-    containers = [{'test_name': docker_cmd['test_name'], 'proc': run_pool.apply_async(run_command_in_container, (docker_cmd['run_cmd'], docker_cmd['exec_cmd'], docker_cmd['stop_cmd'], docker_cmd['container_name'], docker_cmd['database_container'], docker_cmd['network_name']))} for docker_cmd in docker_cmds_list]
+    containers = [{'test_name': docker_cmd['test_name'], 'proc': run_pool.apply_async(docker_cmds_utilities.run_command_in_container, (docker_cmd['run_cmd'], docker_cmd['exec_cmd'], docker_cmd['stop_cmd'], docker_cmd['container_name'], docker_cmd['alias_name'], docker_cmd['database_container'], docker_cmd['database_type'], docker_cmd['network_name']))} for docker_cmd in docker_cmds_list]
 
     container_error_codes = [{'test_name': c['test_name'], 'error_code': c['proc'].get()} for c in containers]
 

@@ -5,3 +5,8 @@ os_identifier_dict = {
     'ubuntu_18': 'ubuntu:18.04'
 }
 
+database_dict = {
+    'mariadb': 'mariadb:10.1',
+    'mysql': 'mysql:5.7',
+    'postgres': 'postgres:12.1'
+}

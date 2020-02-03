@@ -23,7 +23,7 @@ def get_externals_directory():
 def setup_irods(database_type, database_machine):
     if database_type == 'postgres':
         subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
-    elif database_type == 'mysql':
+    elif database_type == 'mysql' or database_type == 'mariadb':
         subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_mysql.input'], shell=True)
     elif database_type == 'oracle':
         status = 'running'
@@ -40,14 +40,14 @@ def setup_irods(database_type, database_machine):
     else:
         print(database_type, ' not supported')
 
-def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arguments, install_externals):
+def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arguments, install_externals, database_type):
     if irods_python_ci_utilities.get_distribution() == 'Ubuntu':
         irods_python_ci_utilities.subprocess_get_output(['apt-get', 'update'], check_rc=True)
     _git_repo = git_repo.split('/')
     plugin_name = _git_repo[len(_git_repo) - 1]
     git_sha = ci_utilities.get_sha_from_commitish(git_repo, git_commitish)
     git_checkout_dir = irods_python_ci_utilities.git_clone(git_repo, git_sha)
-    output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(), plugin_name)
+    output_directory = '/irods_test_env/{0}/{1}/{2}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type)
     plugin_build_dir = '/plugin_mount_dir/{0}'.format(plugin_name)
     if install_externals:
         plugin_basename = plugin_name + '*'
@@ -63,6 +63,11 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
             passthru_args = passthru_args + arg1
 
     if 'irods_capability_storage_tiering' in plugin_name:
+        if len(passthru_args) == 0:
+            pass
+        else:
+            plugin_name = 'irods_capability_unified_storage_tiering'
+            output_directory = '/irods_test_env/{0}/{1}/{2}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type)
         passthru_args.extend(['--munge_path', 'export PATH=/opt/irods-externals/mungefs1.0.2-0/usr/bin:$PATH'])
 
     cmd = ['python', python_script, '--output_root_directory', output_directory, '--built_packages_root_directory', plugin_build_dir] + passthru_args
@@ -79,7 +84,7 @@ def run_test(test_name, database_type):
             rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'cd scripts; export PATH=/opt/irods-externals/mungefs1.0.2-0/usr/bin:$PATH; python2 run_tests.py --use_mungefs --xml_output --run_s={0} 2>&1 | tee {1}; exit $PIPESTATUS'.format(test_name, test_output_file)])
         return rc
     finally:
-        output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(),test_name)
+        output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(), test_name)
         irods_python_ci_utilities.gather_files_satisfying_predicate('/var/lib/irods/log', output_directory, lambda x: True)
         shutil.copy('/var/lib/irods/log/test_output.log', output_directory)
  
@@ -103,7 +108,7 @@ def main():
     parser.add_argument('--upgrade_test', action='store_true', default=False)
     parser.add_argument('--install_externals', action='store_true', default=False)
     parser.add_argument('-d', '--database_type', default='postgres', help='database type', required=True)
-    parser.add_argument('--database_machine', help='oracle database container name', default=None)
+    parser.add_argument('--database_machine', help='database container name', default=None)
     parser.add_argument('-t', '--test_name', default=None, help='test name or the plugin name')
     parser.add_argument('--plugin_repo', default='https://github.com/irods/irods_microservice_plugins_curl.git', help='plugin repo')
     parser.add_argument('--plugin_commitish', default='4-2-stable', help='plugin commitish')
@@ -112,8 +117,7 @@ def main():
 
     args = parser.parse_args()
 
-    ci_utilities.install_irods_packages(args.database_type, args.install_externals, get_irods_packages_directory(), get_externals_directory())
-
+    ci_utilities.install_irods_packages(args.database_type, args.database_machine, args.install_externals, get_irods_packages_directory(), get_externals_directory(), is_provider=True)
     setup_irods(args.database_type, args.database_machine)
 
     if args.upgrade_test:
@@ -125,7 +129,7 @@ def main():
         rc = run_test(args.test_name, args.database_type)
         sys.exit(rc)
     else:
-        rc, stdout, stderr = checkout_git_repo_and_run_test_hook(args.plugin_repo, args.plugin_commitish, args.passthrough_arguments, args.install_externals)
+        rc, stdout, stderr = checkout_git_repo_and_run_test_hook(args.plugin_repo, args.plugin_commitish, args.passthrough_arguments, args.install_externals, args.database_type)
         sys.exit(rc)
 
 if __name__ == '__main__':
