@@ -99,7 +99,7 @@ def main():
     else:
         build_tag = ci_utilities.get_build_tag(args.platform_target, 'plugin-install', args.database_type, args.build_id)
     
-    docker_cmds_utilities.build_irods_zone(build_tag, base_image, args.database_type, 'Dockerfile.install_and_test')
+    docker_cmds_utilities.build_irods_zone(build_tag, base_image, args.database_type, 'Dockerfile.install_and_test', True)
     test_name_prefix = args.platform_target + '_' + args.test_name_prefix.replace('-', '_')
 
     if not args.test_plugin:

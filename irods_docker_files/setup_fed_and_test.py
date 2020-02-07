@@ -18,16 +18,6 @@ def get_irods_packages_directory():
 def get_externals_directory():
     return '/irods_externals'
 
-def setup_irods(database_type, zone_name):
-    if zone_name == 'tempZone':
-        if database_type == 'postgres':
-            p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
-        elif database_type == 'mysql':
-            p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_mysql.input'], shell=True)
-    else:
-            p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /psql_other_zone.input'], shell=True)
-    print("irods setup successful")
-
 def configure_federation(zone_name):
     disable_client_server_negotiation = False
     irods_version = irods_python_ci_utilities.get_irods_version()
@@ -136,8 +126,8 @@ def main():
    
     distribution = irods_python_ci_utilities.get_distribution()
     ci_utilities.install_irods_packages(args.database_type, args.database_machine, args.install_externals, get_irods_packages_directory(), get_externals_directory(), is_provider=True)
+    ci_utilities.setup_irods(args.database_type, args.zone_name, args.database_machine)
 
-    setup_irods(args.database_type, args.zone_name)
     rc = configure_federation(args.zone_name)
     if args.zone_name == 'tempZone':
         check_fed_state(args.remote_zone)
