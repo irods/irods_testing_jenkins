@@ -212,12 +212,8 @@ def get_munge_external():
 
 def install_irods_packages(database_type, database_machine, install_externals, irods_packages_directory, externals_directory=None, upgrade=False, is_provider=False):
     setup_database_client = 'python setup_database_client.py --database_type {0}'.format(database_type)
-    if upgrade:
-        #don't configure the database
-        pass
-    else:
-        if is_provider:
-            subprocess.check_call(setup_database_client, shell=True)
+    if not upgrade and is_provider:
+        subprocess.check_call(setup_database_client, shell=True)
 
     if get_distribution() == 'Centos linux':
         subprocess_get_output(['rpm', '--rebuilddb'], check_rc=True)
@@ -252,25 +248,41 @@ def get_database_plugin(irods_packages_directory, database_type):
     database_plugin = os.path.join(irods_packages_directory, database_plugin_basename)
     return database_plugin
 
-def setup_irods(database_type, database_machine=None):
-    if database_type == 'postgres':
-        subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
-    elif database_type == 'mysql':
-        subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_mysql.input'], shell=True)
-    elif database_type == 'oracle':
-        status = 'running'
-        while status == 'running':
-            status_cmd = ['docker', 'inspect', '--format', '{{.State.Health.Status}}', database_machine]
-            status_proc = Popen(status_cmd, stdout = PIPE, stderr=PIPE)
-            _out, _err = status_proc.communicate()
-            if 'healthy' in _out:
-                status = _out
+def change_setup_file(database_type, alias_name, input_file):
+    file_content =  open(input_file).read()
+    file_content = file_content.replace('localhost', alias_name)
+    if database_type == 'oracle':
+        file_content = file_content.replace('ICAT', 'XE')
+    new_content = open(input_file, 'w')
+    new_content.write(file_content)
+    new_content.close()
 
-            time.sleep(1)
-
-        subprocess.check_call(['export LD_LIBRARY_PATH=/usr/lib/oracle/11.2/client64/lib:$LD_LIBRARY_PATH; export ORACLE_HOME=/usr/lib/oracle/11.2/client64; export PATH=$ORACLE_HOME/bin:$PATH; python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_oracle.input'], shell=True)
+def run_setup_script(export_str, input_file):
+    if export_str is None:
+        subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < {0}'.format(input_file)], shell=True)
     else:
-        print(database_type, ' not supported')
+        subprocess.check_call(['{0} python /var/lib/irods/scripts/setup_irods.py < {1}'.format(export_str, input_file)], shell=True)
+
+def setup_irods(database_type, zone_name='tempZone', database_machine=None):
+    if zone_name == 'tempZone':
+        export_str = None
+        if database_type == 'postgres':
+            input_file = '/var/lib/irods/packaging/localhost_setup_postgres.input'
+            database_alias = 'postgres.example.org'
+        elif database_type == 'mysql' or database_type == 'mariadb':
+            input_file = '/var/lib/irods/packaging/localhost_setup_mysql.input'
+            database_alias = 'mysql.example.org'
+        elif database_type == 'oracle':
+            input_file = '/var/lib/irods/packaging/localhost_setup_oracle.input'
+            database_alias = 'oracle.example.org'
+            export_str = 'export LD_LIBRARY_PATH=/usr/lib/oracle/11.2/client64/lib:$LD_LIBRARY_PATH; export ORACLE_HOME=/usr/lib/oracle/11.2/client64; export PATH=$ORACLE_HOME/bin:$PATH;'
+        else:
+            print(database_type, ' not supported')
+            return
+        change_setup_file(database_type, database_alias, input_file)
+        run_setup_script(export_str, input_file)
+    else:
+        subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /psql_other_zone.input'], shell=True)
 
 def upgrade(upgrade_packages_directory, database_type, install_externals, externals_directory=None, is_provider=True):
     initial_version = get_irods_version()

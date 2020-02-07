@@ -57,12 +57,6 @@ def setup_consumer():
         p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /irods_consumer.input'], shell=True)
         #enable_ssl.enable_ssl('consumer')
 
-def setup_provider(database_type):
-    if database_type == 'postgres':
-        p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
-    if database_type == 'mysql':
-        p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_mysql.input'], shell=True)
-    
 def run_tests(test_type, test_name, database):
     print("let's try to run tests")
     _rc, _out, _err = irods_python_ci_utilities.subprocess_get_output(['python run_tests_in_zone.py --test_type {0} --specific_test {1} --database_type {2}'.format(test_type, test_name, database)], shell=True, check_rc=True)
@@ -123,7 +117,7 @@ def main():
             check_topo_state('icat.example.org', args.database_type)
     else:
         if args.upgrade_test:
-            setup_provider(args.database_type)
+            ci_utilities.setup_irods(args.database_type, 'tempZone', args.database_machine)
             check_ports_open('resource1.example.org')
             check_ports_open('resource2.example.org')
             check_ports_open('resource3.example.org')

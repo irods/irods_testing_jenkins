@@ -48,14 +48,12 @@ def connect_to_network(machine_name, alias_name, network_name):
     _out, _err = proc.communicate()
 
 def delete_network(network_name):
-    delete = False
-    while not delete:
+    while True:
         rm_network = Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE)
         _nout, _nerr = rm_network.communicate()
-        if 'error' in _nerr:
-            time.sleep(1)
-        else:
-            delete = True
+        if 'error' not in _nerr:
+            break
+        time.sleep(1)
 
 def is_container_running(container_name):
     _running = False
@@ -67,6 +65,15 @@ def is_container_running(container_name):
             _running = True
         time.sleep(1)
     return _running
+
+def check_container_health(container_name):
+    while True:
+        status_cmd = ['docker', 'inspect', '--format', '{{.State.Health.Status}}', container_name]
+        status_proc = Popen(status_cmd, stdout = PIPE, stderr=PIPE)
+        _out, _err = status_proc.communicate()
+        if 'healthy' in _out:
+            break
+        time.sleep(1)
 
 def create_federation_args(remote_zone):
     remote_version_cmd = ['docker', 'exec', remote_zone, 'python', 'get_irods_version.py']
@@ -124,8 +131,11 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias
             _running = is_container_running(database_container)
             if _running:
                 connect_to_network(database_container, database_alias, network_name)
-                setup_database = 'python setup_database.py --database_type {0} --database_machine {1} --provider_machine {2} --network_name {3}'.format(database_type, database_container, irods_container, network_name)
-                subprocess.check_call(setup_database, shell=True)
+                if not database_type == 'oracle':
+                    setup_database = 'python setup_database.py --database_type {0} --database_machine {1} --provider_machine {2} --network_name {3}'.format(database_type, database_container, irods_container, network_name)
+                    subprocess.check_call(setup_database, shell=True)
+                else:
+                    check_container_health(database_container)
 
     # execute a command in the running container
     exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
@@ -144,10 +154,10 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias
         _rc = run_test_proc.returncode
 
     # stop the container
-    stop_proc = Popen(stop_cmd, stdout=PIPE, stderr=PIPE)
+    Popen(stop_cmd).wait()
     if database_container is not None:
         database_stop = ['docker', 'stop', database_container]
-        Popen(database_stop, stdout=PIPE, stderr=PIPE).wait()
+        Popen(database_stop).wait()
         delete_network(network_name)
 
     return _exec_rc

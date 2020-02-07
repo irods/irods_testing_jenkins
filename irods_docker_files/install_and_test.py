@@ -63,9 +63,7 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
             passthru_args = passthru_args + arg1
 
     if 'irods_capability_storage_tiering' in plugin_name:
-        if len(passthru_args) == 0:
-            pass
-        else:
+        if len(passthru_args) > 0:
             plugin_name = 'irods_capability_unified_storage_tiering'
             output_directory = '/irods_test_env/{0}/{1}/{2}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type)
         passthru_args.extend(['--munge_path', 'export PATH=/opt/irods-externals/mungefs1.0.2-0/usr/bin:$PATH'])
@@ -118,7 +116,7 @@ def main():
     args = parser.parse_args()
 
     ci_utilities.install_irods_packages(args.database_type, args.database_machine, args.install_externals, get_irods_packages_directory(), get_externals_directory(), is_provider=True)
-    setup_irods(args.database_type, args.database_machine)
+    ci_utilities.setup_irods(args.database_type, 'tempZone', args.database_machine)
 
     if args.upgrade_test:
         ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory())

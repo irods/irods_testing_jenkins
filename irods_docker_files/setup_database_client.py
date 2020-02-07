@@ -63,6 +63,7 @@ def configure_client_apt(database):
         irods_python_ci_utilities.install_os_packages(['postgresql-client', 'odbc-postgresql', 'unixodbc', 'super'])
     elif database == 'mysql':
         #pass
+        irods_python_ci_utilities.subprocess_get_output(['apt-get', 'update'], check_rc=True)
         irods_python_ci_utilities.install_os_packages(['mysql-client', 'libpcre3-dev', 'libmysqlclient-dev', 'build-essential', 'libtool', 'autoconf', 'unixodbc'])
         if irods_python_ci_utilities.get_distribution_version_major() == '16':
             tar_output_dir = tempfile.mkdtemp(prefix='irods_mysql_connector_tar_extraction')
