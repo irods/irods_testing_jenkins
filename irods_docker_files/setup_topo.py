@@ -96,7 +96,7 @@ def main():
   
     distribution = irods_python_ci_utilities.get_distribution()
     ci_utilities.install_irods_packages(args.database_type, args.database_machine, args.install_externals, get_irods_packages_directory(), get_externals_directory(), is_provider = args.is_provider)
-
+    set_univmss()
 
     if not args.is_provider:
         setup_consumer()
@@ -110,7 +110,6 @@ def main():
             rc = run_tests(args.test_type, args.test_name, args.database_type)
             sys.exit(rc)
         else:
-            #set_univmss()
             check_ports_open('icat.example.org')
             check_ports_open('resource2.example.org')
             check_ports_open('resource3.example.org')
@@ -133,7 +132,6 @@ def main():
                 rc = run_tests(args.test_type, args.test_name, args.database_type)
                 sys.exit(rc)
         else:
-            #set_univmss()
             check_ports_open('resource1.example.org')
             check_ports_open('resource2.example.org')
             check_ports_open('resource3.example.org')
