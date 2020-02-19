@@ -47,7 +47,6 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
     plugin_name = _git_repo[len(_git_repo) - 1]
     git_sha = ci_utilities.get_sha_from_commitish(git_repo, git_commitish)
     git_checkout_dir = irods_python_ci_utilities.git_clone(git_repo, git_sha)
-    output_directory = '/irods_test_env/{0}/{1}/{2}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type)
     plugin_build_dir = '/plugin_mount_dir/{0}'.format(plugin_name)
     if install_externals:
         plugin_basename = plugin_name + '*'
@@ -61,12 +60,18 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
         for args in passthrough_arguments.split(','):
             arg1 = args.split(' ')
             passthru_args = passthru_args + arg1
-
     if 'irods_capability_storage_tiering' in plugin_name:
         if len(passthru_args) > 0:
             plugin_name = 'irods_capability_unified_storage_tiering'
-            output_directory = '/irods_test_env/{0}/{1}/{2}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type)
         passthru_args.extend(['--munge_path', 'export PATH=/opt/irods-externals/mungefs1.0.2-0/usr/bin:$PATH'])
+
+    output_directory = '/irods_test_env/{0}/{1}/{2}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type)
+
+    if 'audit' in plugin_name:
+        if '--message_broker' in args.passthrough_arguments:
+            message_broker = args.passthrough_arguments.split(' ')[1]
+            output_directory = '/irods_test_env/{0}/{1]/{2}/{3}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type, message_broker)
+
 
     cmd = ['python', python_script, '--output_root_directory', output_directory, '--built_packages_root_directory', plugin_build_dir] + passthru_args
     print(cmd)
@@ -82,7 +87,7 @@ def run_test(test_name, database_type):
             rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'cd scripts; export PATH=/opt/irods-externals/mungefs1.0.2-0/usr/bin:$PATH; python2 run_tests.py --use_mungefs --xml_output --run_s={0} 2>&1 | tee {1}; exit $PIPESTATUS'.format(test_name, test_output_file)])
         return rc
     finally:
-        output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(), test_name)
+        output_directory = '/irods_test_env/{0}/{1}/{2}'.format(irods_python_ci_utilities.get_irods_platform_string(), database_type, test_name)
         irods_python_ci_utilities.gather_files_satisfying_predicate('/var/lib/irods/log', output_directory, lambda x: True)
         shutil.copy('/var/lib/irods/log/test_output.log', output_directory)
  

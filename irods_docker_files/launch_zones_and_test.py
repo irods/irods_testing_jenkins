@@ -50,16 +50,20 @@ def create_federation(federation_tag_list, network_name, cmd_line_args):
     platform_target = cmd_line_args.platform_target
     test_name_prefix = cmd_line_args.test_name_prefix
 
+    docker_cmds_utilities.create_network(network_name)
+
     for i, federation_tag in enumerate(federation_tag_list, start=1):
         zone_name = zone2
         federated_zone_name = 'icat.otherZone.example.org'
         remote_federated_zone = platform_target + '-' + test_name_prefix + '-' + zone1
-        database_container = cmd_line_args.test_name_prefix + '_otherZone_' + cmd_line_args.database_type + '-database'
+        database_container = platform_target + '_' + cmd_line_args.test_name_prefix + '_otherZone_' + cmd_line_args.database_type + '-database'
         if i == 1:
             zone_name = zone1
             federated_zone_name = 'icat.tempZone.example.org'
             remote_federated_zone = platform_target + '-' + test_name_prefix + '-' + zone2
-            database_container = cmd_line_args.test_name_prefix + '_tempZone_' + cmd_line_args.database_type + '-database'
+            database_container = platform_target + '_' + cmd_line_args.test_name_prefix + '_tempZone_' + cmd_line_args.database_type + '-database'
+
+        docker_cmds_utilities.run_database(cmd_line_args.database_type, database_container, federated_zone_name, network_name)
 
         federation_name = platform_target + '-' + test_name_prefix + '-' + zone_name
         machine_list.append(federation_name)

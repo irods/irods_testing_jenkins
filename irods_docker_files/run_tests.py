@@ -67,6 +67,9 @@ def run_plugin_tests(image_name, plugin_sha, machine_name, plugin_name, test_nam
     network_name = test_name_prefix + '_' + cmd_line_args.database_type + '_' + plugin_name
     alias_name = 'icat.example.org'
 
+    docker_cmds_utilities.create_network(network_name)
+    docker_cmds_utilities.run_database(cmd_line_args.database_type, database_container, alias_name, network_name)
+
     _rc = docker_cmds_utilities.run_command_in_container(run_cmd, exec_cmd, stop_cmd, machine_name, alias_name, database_container, cmd_line_args.database_type, network_name)
     sys.exit(_rc)
 

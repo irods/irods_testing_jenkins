@@ -10,7 +10,6 @@ import shutil
 import socket
 import time
 import ci_utilities
-import enable_ssl
 from subprocess import Popen, PIPE
 
 def get_irods_packages_directory():
@@ -30,11 +29,10 @@ def check_ports_open(machine_name):
         proc = subprocess.Popen(listen_cmd, stdout = PIPE, stderr = PIPE)
         _out, _err = proc.communicate()
         print('_err ', _err)
+        if 'Connection refused' in (_err):
+            time.sleep(1)
         if 'open' in (_err):
             status = 'open'
-        if not 'Connection refused' in (_err):
-            status = 'open'
-        time.sleep(1)
         print('status ', status)
 
     return status
@@ -106,26 +104,22 @@ def main():
             check_ports_open('resource3.example.org')
             ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
         if args.test_type == 'topology_resource' and args.alias_name == 'resource1.example.org':
-            check_ports_open('icat.example.org')
-            rc = run_tests(args.test_type, args.test_name, args.database_type)
-            sys.exit(rc)
+            status = check_ports_open('icat.example.org')
+            if status == 'open':
+                rc = run_tests(args.test_type, args.test_name, args.database_type)
+                sys.exit(rc)
         else:
             check_ports_open('icat.example.org')
             check_ports_open('resource2.example.org')
             check_ports_open('resource3.example.org')
             check_topo_state('icat.example.org', args.database_type)
     else:
+        ci_utilities.setup_irods(args.database_type, 'tempZone', args.database_machine)
         if args.upgrade_test:
-            ci_utilities.setup_irods(args.database_type, 'tempZone', args.database_machine)
             check_ports_open('resource1.example.org')
             check_ports_open('resource2.example.org')
             check_ports_open('resource3.example.org')
             ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
-        else:
-            ci_utilities.setup_irods(args.database_type)
-
-        #enable_ssl.enable_ssl('provider')
-
         if args.test_type == 'topology_icat':
             status = check_ports_open('resource1.example.org')
             if status == 'open':

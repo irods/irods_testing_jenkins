@@ -54,7 +54,7 @@ def create_topology(cmd_line_args, provider_tag, consumer_tag_list, machine_list
     print(network_name)
     machine_list.append(provider_name)
 
-    database_container = cmd_line_args.test_name_prefix + '_' + cmd_line_args.test_type + '_' + cmd_line_args.database_type + '-database'
+    database_container = cmd_line_args.platform_target + '_' + cmd_line_args.test_name_prefix + '_' + cmd_line_args.test_type + '_' + cmd_line_args.database_type + '-database'
     cmdsBuilder = DockerCommandsBuilder()
     cmdsBuilder.core_constructor(provider_name, build_mount, upgrade_mount, results_mount, run_mount, externals_mount, mysql_mount, provider_tag, 'setup_topo.py', cmd_line_args.database_type, cmd_line_args.specific_test, cmd_line_args.test_type, False, True, database_container)
     cmdsBuilder.set_machine_list(machine_list)
@@ -89,6 +89,9 @@ def create_topology(cmd_line_args, provider_tag, consumer_tag_list, machine_list
     
         docker_cmd = docker_cmds_utilities.get_docker_cmd(consumer_run_cmd, consumer_exec_cmd, consumer_stop_cmd, consumer_name, resource_name, database_container, cmd_line_args.database_type, network_name, extra_args)
         docker_cmds_list.append(docker_cmd)
+
+    docker_cmds_utilities.create_network(network_name)
+    docker_cmds_utilities.run_database(cmd_line_args.database_type, database_container, provider_alias, network_name)
 
     #enable_ssl_cmd = ['python', 'enable_ssl.py', '--machine_list', ' '.join(machine_list)]
     #print(enable_ssl_cmd)

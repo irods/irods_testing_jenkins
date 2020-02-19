@@ -8,10 +8,10 @@ import sys
 import json
 import time
 
-if sys.version_info < (3, 0):
-    from urlparse import urlparse
-else:
+try:
     from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 from github import Github
 from subprocess import Popen, PIPE
