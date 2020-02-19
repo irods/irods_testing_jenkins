@@ -4,7 +4,7 @@ USER root
 RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils &&\
     DEBIAN_FRONTEND=noninteractive &&\
     apt-get install -y python-pip &&\
-    pip install docker pygithub
+    pip install docker pygithub==1.45
 
 RUN apt-get install -qqy apt-transport-https ca-certificates curl gnupg2 software-properties-common && \
     curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \

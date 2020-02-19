@@ -33,7 +33,7 @@ RUN yum -y update && yum clean all &&\
     yum -y install python-pip git net-tools iputils && \
     yum clean all
 
-RUN pip install --ignore-installed pygithub
+RUN pip install --ignore-installed pygithub==1.45
 
 RUN yum -y install yum-utils device-mapper-persistent-data lvm2 rsyslog
 
