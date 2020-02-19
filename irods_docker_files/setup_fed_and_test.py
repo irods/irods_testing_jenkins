@@ -94,7 +94,7 @@ def run_tests(zone_name, remote_zone, test_type, test_name):
         return _rc
 
 
-def check_fed_state(machine_name):
+def check_fed_state(machine_name, database_type):
     is_running = True
     while is_running:
         cmd = ['ping', '-W', '10', '-c', '1', machine_name]
@@ -102,12 +102,12 @@ def check_fed_state(machine_name):
         output, err = proc.communicate()
         _rc = proc.returncode
         if _rc != 0:
-            gather_logs()
+            gather_logs(database_type)
             sys.exit(_rc)
 
-def gather_logs():
+def gather_logs(database_type):
     import socket
-    output_directory = '/irods_test_env/{0}/{1}'.format(irods_python_ci_utilities.get_irods_platform_string(),socket.gethostname())
+    output_directory = '/irods_test_env/{0}/{1}/{2}'.format(irods_python_ci_utilities.get_irods_platform_string(),database_type, socket.gethostname())
     irods_python_ci_utilities.gather_files_satisfying_predicate('/var/lib/irods/log', output_directory, lambda x: True)
 
 def main():
@@ -130,7 +130,7 @@ def main():
 
     rc = configure_federation(args.zone_name)
     if args.zone_name == 'tempZone':
-        check_fed_state(args.remote_zone)
+        check_fed_state(args.remote_zone, args.database_type)
     else:
         sys.exit(rc)
 

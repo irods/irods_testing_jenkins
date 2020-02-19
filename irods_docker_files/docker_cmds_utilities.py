@@ -17,9 +17,8 @@ def get_docker_cmd(run_cmd, exec_cmd, stop_cmd, container_name, alias_name, data
                   'network_name': network_name
                  }
     if extra_args is not None:
-        docker_cmd.update(extra_args)
+        docker_cmd.update( extra_args )
 
-    print(docker_cmd)
     return docker_cmd
 
 def build_irods_zone(build_tag, base_image, database_type, dockerfile='Dockerfile.install_and_test', install_database=True):
@@ -89,55 +88,58 @@ def create_federation_args(remote_zone):
     federation_args = ' '.join([irods_version, 'tempZone', 'icat.tempZone.example.org'])
     return federation_args
 
+def run_database(database_type, database_container, alias_name, network_name):
+    database_alias = 'database.example.org'
+    if database_type == 'oracle':
+        database_alias = 'oracle.example.org'
+        run_cmd = ['docker', 'run', '-d', '--rm',  '--name', database_container, '--shm-size=1g', '-e', 'ORACLE_PWD=testpassword', 'oracle/database:11.2.0.2-xe']
+    else:
+        import configuration
+
+        database_image = configuration.database_dict[database_type]
+        run_cmd = ['docker', 'run', '-d', '--rm',  '--name', database_container]
+        if database_type == 'postgres':
+            database_alias = 'postgres.example.org'
+            if 'otherZone' in alias_name:
+                database_alias = 'postgres.otherZone.example.org'
+            passwd_env_var = 'POSTGRES_PASSWORD=testpassword'
+        elif database_type == 'mysql' or database_type == 'mariadb':
+            database_alias = 'mysql.example.org'
+            if 'otherZone' in alias_name:
+                database_alias = 'postgres.otherZone.example.org'
+            passwd_env_var = 'MYSQL_ROOT_PASSWORD=password'
+            run_cmd.extend(['-e', 'MYSQL_DATABASE=ICAT', '-e', 'MYSQL_USER=irods', '-e', 'MYSQL_PASSWORD=testpassword'])
+        run_cmd.extend(['-e', passwd_env_var, '-h', database_alias, database_image])
+        print('database_run_cmd --> ', run_cmd)
+
+        run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
+        _out, _err = run_proc.communicate()
+        _running = is_container_running(database_container)
+        if _running:
+            connect_to_network(database_container, database_alias, network_name)
+
 def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias_name, database_container, database_type, network_name, **kwargs):
     # the docker run command (stand up a container)
     print(kwargs)
     run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
     _out, _err = run_proc.communicate()
     if database_container is not None:
-        if not 'otherZone' in alias_name:
+        if 'test_type' in kwargs and kwargs['test_type'] == 'standalone_icat':
             create_network(network_name)
-        _icat_running = is_container_running(irods_container)
-        if _icat_running:
+            run_database(database_type, database_container, alias_name, network_name)
+        if is_container_running(irods_container):
             connect_to_network(irods_container, alias_name, network_name)
 
         if not 'resource' in alias_name:
-            database_alias = 'database.example.org'
-            if database_type == 'oracle':
-                database_alias = 'oracle.example.org'
-                run_cmd = ['docker', 'run', '-d', '--rm',  '--name', database_container, '--shm-size=1g', '-e', 'ORACLE_PWD=testpassword', 'oracle/database:11.2.0.2-xe']
-            else:
-                import configuration
-
-                database_image = configuration.database_dict[database_type]
-                run_cmd = ['docker', 'run', '-d', '--rm',  '--name', database_container]
-                if database_type == 'postgres':
-                    database_alias = 'postgres.example.org'
-                    if 'otherZone' in alias_name:
-                        database_alias = 'postgres.otherZone.example.org'
-                    passwd_env_var = 'POSTGRES_PASSWORD=testpassword'
-                elif database_type == 'mysql' or database_type == 'mariadb':
-                    database_alias = 'mysql.example.org'
-                    if 'otherZone' in alias_name:
-                        database_alias = 'postgres.otherZone.example.org'
-                    passwd_env_var = 'MYSQL_ROOT_PASSWORD=password'
-                    run_cmd.extend(['-e', 'MYSQL_DATABASE=ICAT', '-e', 'MYSQL_USER=irods', '-e', 'MYSQL_PASSWORD=testpassword'])
-
-                run_cmd.extend(['-e', passwd_env_var, '-h', database_alias, database_image])
-                print('database_run_cmd --> ', run_cmd)
-
-            run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
-            _out, _err = run_proc.communicate()
-            _running = is_container_running(database_container)
-            if _running:
-                connect_to_network(database_container, database_alias, network_name)
-                if not database_type == 'oracle':
+            if is_container_running(database_container):
+                if database_type == 'oracle':
+                    check_container_health(database_container)
+                else:
                     setup_database = 'python setup_database.py --database_type {0} --database_machine {1} --provider_machine {2} --network_name {3}'.format(database_type, database_container, irods_container, network_name)
                     subprocess.check_call(setup_database, shell=True)
-                else:
-                    check_container_health(database_container)
 
     # execute a command in the running container
+    print('exec_cmd --> ', exec_cmd)
     exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
     _eout, _eerr = exec_proc.communicate()
     _exec_rc = exec_proc.returncode
@@ -147,11 +149,11 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias
         test_type = kwargs['test_type']
         test_name = kwargs['test_name']
 
-        run_test_cmd = ['docker', 'exec', irods_container, 'python', 'run_tests_in_zone.py', '--test_type', test_type, '--specific_test', test_name, '--federation_args', federation_args]
+        run_test_cmd = ['docker', 'exec', irods_container, 'python', 'run_tests_in_zone.py', '--test_type', test_type, '--database_type', database_type, '--specific_test', test_name, '--federation_args', federation_args]
         print('run test cmd', run_test_cmd)
         run_test_proc = Popen(run_test_cmd, stdout=PIPE, stderr=PIPE)
         _eout, _eerr = run_test_proc.communicate()
-        _rc = run_test_proc.returncode
+        _exec_rc = run_test_proc.returncode
 
     # stop the container
     Popen(stop_cmd).wait()
