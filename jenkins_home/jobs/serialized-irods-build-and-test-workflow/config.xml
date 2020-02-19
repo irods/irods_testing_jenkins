@@ -1,0 +1,169 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.36">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.31">
+      <autoRebuild>false</autoRebuild>
+      <rebuildDisabled>false</rebuildDisabled>
+    </com.sonyericsson.rebuild.RebuildSettings>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_IRODS_REPO</name>
+          <description></description>
+          <defaultValue>https://github.com/irods/irods</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_IRODS_COMMITISH</name>
+          <description></description>
+          <defaultValue>master</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_IRODS_ICOMMANDS_REPO</name>
+          <description></description>
+          <defaultValue>https://github.com/irods/irods_client_icommands</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_IRODS_ICOMMANDS_COMMITISH</name>
+          <description></description>
+          <defaultValue>master</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_PLATFORM_TARGETS</name>
+          <description>ubuntu_16,centos_7</description>
+          <defaultValue>ubuntu_16,centos_7</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_CORE_TESTS</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_CORE_UNIT_TESTS</name>
+          <description>Run unit tests for iRODS core.</description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_PLUGIN_TESTS</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_FEDERATION_TESTS</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_TOPOLOGY_TESTS</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_DATABASE_TYPE</name>
+          <description></description>
+          <defaultValue>postgres</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_TEST_PARALLELISM</name>
+          <description>The number of tests to run in parallel per OS/Database flavor.</description>
+          <defaultValue>4</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_EXTERNALS_ROOT_DIR</name>
+          <description></description>
+          <defaultValue>None</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
+    <script>node {
+    def job_number = env.BUILD_ID
+    def buildOutputDirectory = env.JENKINS_OUTPUT + &apos;/build_irods_on_base/&apos; + job_number
+    def parallelTests = [:]
+    stage(&quot;Build Base OS&quot;) {
+        b = build job: &quot;build_base_os&quot;,
+            parameters: [
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number]
+            ]
+    }
+    stage(&quot;iRODS Build&quot;) {
+        build job: &quot;build_irods_on_base&quot;,
+            parameters: [
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_REPO&apos;, value: PARAMETER_IRODS_REPO],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_ICOMMANDS_REPO&apos;, value: PARAMETER_IRODS_ICOMMANDS_REPO],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_ICOMMANDS_COMMITISH&apos;, value: PARAMETER_IRODS_ICOMMANDS_COMMITISH]
+            ]
+    }
+    if(PARAMETER_RUN_CORE_TESTS == &quot;true&quot;) {
+        stage(&quot;Install and Run iRODS Core Tests&quot;) {
+            build job: &quot;run_irods_tests&quot;, 
+            parameters: [
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_REPO&apos;, value: PARAMETER_IRODS_REPO],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_PARALLELISM&apos;, value: PARAMETER_TEST_PARALLELISM],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR],
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_UNIT_TESTS&apos;, value: PARAMETER_RUN_CORE_UNIT_TESTS]
+            ]
+        }    
+    }
+    if(PARAMETER_RUN_FEDERATION_TESTS == &quot;true&quot;) {
+        stage(&quot;Install and Run Federation Tests&quot;) {
+            build job:&quot;run_tests_on_federation&quot;,
+            parameters: [
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
+            ]
+        }
+    }
+    if(PARAMETER_RUN_PLUGIN_TESTS == &quot;true&quot;) {
+        stage(&quot;Install and Run Plugin Tests&quot;) {
+            echo &quot;Stage2 Install and Run Plugin Tests&quot;
+            build job:&quot;serialized_all_plugins_build_and_test_workflow&quot;,
+            parameters: [
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
+            ]
+        }  
+    }
+    if(PARAMETER_RUN_TOPOLOGY_TESTS == &quot;true&quot;) {
+        stage(&quot;Install and Run Topology Tests&quot;) {
+            build job:&quot;run_tests_on_topology&quot;,
+            parameters: [
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
+            ]
+        }
+    }
+}
+</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
