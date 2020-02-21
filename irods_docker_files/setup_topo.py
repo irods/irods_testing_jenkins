@@ -8,6 +8,7 @@ import irods_python_ci_utilities
 import subprocess
 import shutil
 import socket
+import tempfile
 import time
 import ci_utilities
 from subprocess import Popen, PIPE
@@ -53,11 +54,13 @@ def setup_consumer():
     print("setup_consumer")
     if status == 'open':
         p = subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /irods_consumer.input'], shell=True)
-        #enable_ssl.enable_ssl('consumer')
 
-def run_tests(test_type, test_name, database):
+def run_tests(test_type, test_name, database, use_ssl):
     print("let's try to run tests")
-    _rc, _out, _err = irods_python_ci_utilities.subprocess_get_output(['python run_tests_in_zone.py --test_type {0} --specific_test {1} --database_type {2}'.format(test_type, test_name, database)], shell=True, check_rc=True)
+    ssl_string = '--use_ssl' if use_ssl else ''
+    test_cmd = ['python run_tests_in_zone.py --test_type {0} --specific_test {1} --database_type {2} {3}'.format(test_type, test_name, database, ssl_string)]
+    print(test_cmd)
+    _rc, _out, _err = irods_python_ci_utilities.subprocess_get_output(test_cmd, shell=True, check_rc=True)
     return _rc
 
 def check_topo_state(machine_name, database):
@@ -75,6 +78,17 @@ def gather_logs(database_type):
     output_directory = '/irods_test_env/{0}/{1}/{2}'.format(irods_python_ci_utilities.get_irods_platform_string(),database_type,socket.gethostname())
     irods_python_ci_utilities.gather_files_satisfying_predicate('/var/lib/irods/log', output_directory, lambda x: True)
 
+def enable_pam():
+    with tempfile.NamedTemporaryFile() as f:
+        f.write('''
+auth        required      pam_env.so
+auth        sufficient    pam_unix.so
+auth        requisite     pam_succeed_if.so uid >= 500 quiet
+auth        required      pam_deny.so
+''')
+        f.flush()
+        subprocess.check_call(["cat '{0}' >> /etc/pam.d/irods".format(f.name)] , shell=True)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--is_provider', action='store_true', default=False)
@@ -89,6 +103,7 @@ def main():
     parser.add_argument('--network_name', type=str, required=False)
     parser.add_argument('--alias_name', type=str, required=False)
     parser.add_argument('--consumer_list', type=str)
+    parser.add_argument('--use_ssl', action='store_true', default=False)
 
     args = parser.parse_args()
   
@@ -98,6 +113,7 @@ def main():
 
     if not args.is_provider:
         setup_consumer()
+        enable_pam()
         if args.upgrade_test:
             check_ports_open('icat.example.org')
             check_ports_open('resource2.example.org')
@@ -106,7 +122,10 @@ def main():
         if args.test_type == 'topology_resource' and args.alias_name == 'resource1.example.org':
             status = check_ports_open('icat.example.org')
             if status == 'open':
-                rc = run_tests(args.test_type, args.test_name, args.database_type)
+                if args.use_ssl:
+                     import enable_ssl
+                     enable_ssl.enable_ssl()
+                rc = run_tests(args.test_type, args.test_name, args.database_type, args.use_ssl)
                 sys.exit(rc)
         else:
             check_ports_open('icat.example.org')
@@ -115,6 +134,7 @@ def main():
             check_topo_state('icat.example.org', args.database_type)
     else:
         ci_utilities.setup_irods(args.database_type, 'tempZone', args.database_machine)
+        enable_pam()
         if args.upgrade_test:
             check_ports_open('resource1.example.org')
             check_ports_open('resource2.example.org')
@@ -123,7 +143,10 @@ def main():
         if args.test_type == 'topology_icat':
             status = check_ports_open('resource1.example.org')
             if status == 'open':
-                rc = run_tests(args.test_type, args.test_name, args.database_type)
+                if args.use_ssl:
+                     import enable_ssl
+                     enable_ssl.enable_ssl()
+                rc = run_tests(args.test_type, args.test_name, args.database_type, args.use_ssl)
                 sys.exit(rc)
         else:
             check_ports_open('resource1.example.org')

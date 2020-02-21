@@ -58,6 +58,7 @@ def create_topology(cmd_line_args, provider_tag, consumer_tag_list, machine_list
     cmdsBuilder = DockerCommandsBuilder()
     cmdsBuilder.core_constructor(provider_name, build_mount, upgrade_mount, results_mount, run_mount, externals_mount, mysql_mount, provider_tag, 'setup_topo.py', cmd_line_args.database_type, cmd_line_args.specific_test, cmd_line_args.test_type, False, True, database_container)
     cmdsBuilder.set_machine_list(machine_list)
+    cmdsBuilder.set_use_ssl(cmd_line_args.use_ssl)
 
     provider_run_cmd = cmdsBuilder.build_run_cmd()
     provider_exec_cmd = cmdsBuilder.build_exec_cmd()
@@ -68,7 +69,7 @@ def create_topology(cmd_line_args, provider_tag, consumer_tag_list, machine_list
 
     provider_alias = 'icat.example.org'
 
-    extra_args = {'test_type': cmd_line_args.test_type}
+    extra_args = {'test_type': cmd_line_args.test_type, 'machine_list': ' '.join(machine_list)}
     docker_cmd = docker_cmds_utilities.get_docker_cmd(provider_run_cmd, provider_exec_cmd, provider_stop_cmd, provider_name, provider_alias, database_container, cmd_line_args.database_type, network_name, extra_args)
     docker_cmds_list.append(docker_cmd)
     
@@ -100,7 +101,7 @@ def create_topology(cmd_line_args, provider_tag, consumer_tag_list, machine_list
     #print(_ssl_out, _ssl_err)
 
     run_pool = Pool(processes=int(4))
-    containers = [{'test_type': docker_cmd['test_type'],'alias_name':docker_cmd['alias_name'], 'proc': run_pool.apply_async(docker_cmds_utilities.run_command_in_container, (docker_cmd['run_cmd'], docker_cmd['exec_cmd'], docker_cmd['stop_cmd'], docker_cmd['container_name'], docker_cmd['alias_name'], docker_cmd['database_container'], docker_cmd['database_type'], docker_cmd['network_name']))} for docker_cmd in docker_cmds_list]
+    containers = [{'test_type': docker_cmd['test_type'],'alias_name':docker_cmd['alias_name'], 'proc': run_pool.apply_async(docker_cmds_utilities.run_command_in_container, (docker_cmd['run_cmd'], docker_cmd['exec_cmd'], docker_cmd['stop_cmd'], docker_cmd['container_name'], docker_cmd['alias_name'], docker_cmd['database_container'], docker_cmd['database_type'], docker_cmd['network_name'],), {'test_type': docker_cmd['test_type'], 'machine_list': docker_cmd['machine_list']})} for docker_cmd in docker_cmds_list]
 
     container_error_codes = [{'test_type': c['test_type'], 'alias_name':c['alias_name'],'error_code': c['proc'].get()} for c in containers]
     print(container_error_codes)
@@ -114,6 +115,8 @@ def check_topo_state(machine_list, network_name, container_error_codes):
     for machine_name in machine_list:
         for ec in container_error_codes:
             if ec['error_code'] != 0 and ec['alias_name'] == 'icat.example.org' and ec['test_type'] == 'topology_icat':
+                failures.append(ec['alias_name'])
+            if ec['error_code'] != 0 and ec['alias_name'] == 'resource1.example.org' and ec['test_type'] == 'topology_resource':
                 failures.append(ec['alias_name'])
     
     if len(failures) > 0:
@@ -135,11 +138,13 @@ def main():
     parser.add_argument('--providers', type=int, default=1, help='number of providers')
     parser.add_argument('--database_type', default='postgres', help='database type', required=True)
     parser.add_argument('-o', '--output_directory', type=str, required=False)
+    parser.add_argument('--use_ssl', action='store_true', default=False)
     
     args = parser.parse_args()
 
     print('specific_test ', args.specific_test)
     print('test_type ' , args.test_type)
+    print('use_ssl ', args.use_ssl)
 
     build_topo_containers(args)
 

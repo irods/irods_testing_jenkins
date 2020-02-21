@@ -2,6 +2,8 @@
 from __future__ import print_function
 
 import time
+import tempfile
+import os
 import subprocess
 from subprocess import Popen, PIPE
 
@@ -88,6 +90,42 @@ def create_federation_args(remote_zone):
     federation_args = ' '.join([irods_version, 'tempZone', 'icat.tempZone.example.org'])
     return federation_args
 
+def install_ssl_files(machine_list):
+    with tempfile.NamedTemporaryFile(prefix='rsa-keyfile') as f_rsa_keyfile:
+        create_rsa_keyfile(f_rsa_keyfile.name)
+        with tempfile.NamedTemporaryFile(prefix='self-signed-certificate') as f_self_signed_certificate:
+            create_self_signed_certificate(f_rsa_keyfile.name, f_self_signed_certificate.name)
+            with tempfile.NamedTemporaryFile(prefix='diffie-hellman-parameters') as f_diffie_hellman_parameters:
+                create_diffie_hellman_parameters(f_diffie_hellman_parameters.name)
+
+                files_to_copy = [(f_rsa_keyfile.name, '/ssl_keys/server.key'),
+                                 (f_self_signed_certificate.name, '/ssl_keys/server.crt'),
+                                 (f_diffie_hellman_parameters.name, '/ssl_keys/dhparams.pem')]
+                for src, dst in files_to_copy:
+                    copy_file_to_machines(machine_list, src, dst)
+
+def copy_file_to_machines(machine_list, src, dst):
+    if machine_list is not None:
+        for machine in machine_list.split(' '):
+            print(machine)
+            print(src, ' --- ', dst)
+            print(os.path.exists(src))
+            copy_cmd = "docker cp {0} {1}:{2}".format(src, machine, dst)
+            print(copy_cmd)
+            copy_proc = subprocess.check_call(copy_cmd, shell=True)
+
+def create_rsa_keyfile(filename):
+    subprocess.check_call(['openssl', 'genrsa', '-out', filename])
+
+def create_self_signed_certificate(filename_key, filename_certificate):
+    p = Popen(['openssl', 'req', '-new', '-x509', '-key', filename_key, '-out', filename_certificate, '-days', '365'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate('\n'*7)
+    if p.returncode != 0:
+        raise subprocess.CalledProcessError(p.returncode, p.args, 'stdout [{0}], stderr [{1}]'.format(out, err))
+
+def create_diffie_hellman_parameters(filename):
+    subprocess.check_call(['openssl', 'dhparam', '-2', '-out', filename, '1024'])
+
 def run_database(database_type, database_container, alias_name, network_name):
     database_alias = 'database.example.org'
     if database_type == 'oracle':
@@ -120,13 +158,15 @@ def run_database(database_type, database_container, alias_name, network_name):
 
 def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias_name, database_container, database_type, network_name, **kwargs):
     # the docker run command (stand up a container)
-    print(kwargs)
     run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
     _out, _err = run_proc.communicate()
     if database_container is not None:
         if 'test_type' in kwargs and kwargs['test_type'] == 'standalone_icat':
             create_network(network_name)
             run_database(database_type, database_container, alias_name, network_name)
+        if 'test_type' in kwargs and 'topology' in kwargs['test_type'] and 'machine_list' in kwargs:
+            install_ssl_files(kwargs['machine_list'])
+
         if is_container_running(irods_container):
             connect_to_network(irods_container, alias_name, network_name)
 
@@ -139,18 +179,15 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias
                     subprocess.check_call(setup_database, shell=True)
 
     # execute a command in the running container
-    print('exec_cmd --> ', exec_cmd)
     exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
     _eout, _eerr = exec_proc.communicate()
     _exec_rc = exec_proc.returncode
     if _exec_rc == 0 and 'otherZone' in alias_name:
         federation_args = create_federation_args(kwargs['remote_zone'])
-        print(federation_args)
         test_type = kwargs['test_type']
         test_name = kwargs['test_name']
 
         run_test_cmd = ['docker', 'exec', irods_container, 'python', 'run_tests_in_zone.py', '--test_type', test_type, '--database_type', database_type, '--specific_test', test_name, '--federation_args', federation_args]
-        print('run test cmd', run_test_cmd)
         run_test_proc = Popen(run_test_cmd, stdout=PIPE, stderr=PIPE)
         _eout, _eerr = run_test_proc.communicate()
         _exec_rc = run_test_proc.returncode
@@ -158,8 +195,9 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias
     # stop the container
     Popen(stop_cmd).wait()
     if database_container is not None:
-        database_stop = ['docker', 'stop', database_container]
-        Popen(database_stop).wait()
-        delete_network(network_name)
+        if not 'resource' in alias_name:
+            database_stop = ['docker', 'stop', database_container]
+            Popen(database_stop).wait()
+            delete_network(network_name)
 
     return _exec_rc
