@@ -20,6 +20,7 @@ class DockerCommandsBuilder(object):
         self.passthru_args = None
         self.is_unit_test = False
         self.is_provider = False
+        self.use_ssl = False
         self.database_machine = None
         self.docker_socket = '/var/run/docker.sock:/var/run/docker.sock'
         self.machine_list = None
@@ -86,6 +87,9 @@ class DockerCommandsBuilder(object):
 
     def set_is_provider(self, is_provider):
         self.is_provider = is_provider
+
+    def set_use_ssl(self, use_ssl):
+        self.use_ssl = use_ssl
 
     def set_database_machine(self, database_machine):
         self.database_machine = database_machine
@@ -198,6 +202,8 @@ class DockerCommandsBuilder(object):
             cmd.extend(['--zone_name', self.zone_name, '--remote_zone', self.remote_zone])
         if self.is_provider and 'topology' in self.test_type:
             cmd.append('--is_provider')
+        if self.use_ssl and 'topology' in self.test_type:
+            cmd.append('--use_ssl')
         return cmd
 
     def build_stop_cmd(self):

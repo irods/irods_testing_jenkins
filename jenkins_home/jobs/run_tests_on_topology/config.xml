@@ -50,16 +50,20 @@
           <defaultValue>None</defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_ENABLE_SSL</name>
+          <description></description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
     <script>node {
      def build_id = env.BUILD_ID
-     
-     print(build_id)
      def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + build_id
      def dockerfile_dir = env.GLOBAL_PARAMETER_DOCKER_REPO
+     
      dir(dockerfile_dir) {
          stage(&apos;Create Topologies&apos;) {
              def base_os = PARAMETER_PLATFORM_TARGETS.split(&apos;,&apos;)
@@ -75,6 +79,9 @@
                               &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE + 
                               &apos; --test_type &apos; + PARAMETER_TEST_TYPE + 
                               &apos; --specific_test &apos; + PARAMETER_SPECIFIC_TEST
+                if(PARAMETER_ENABLE_SSL == &quot;true&quot;) {
+                    run_cmd = run_cmd + &apos; --use_ssl&apos;
+                }
                 parallelBranches[&quot;${os}&quot;] = {
                     sh run_cmd 
                 }
