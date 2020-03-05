@@ -94,12 +94,6 @@ def create_topology(cmd_line_args, provider_tag, consumer_tag_list, machine_list
     docker_cmds_utilities.create_network(network_name)
     docker_cmds_utilities.run_database(cmd_line_args.database_type, database_container, provider_alias, network_name)
 
-    #enable_ssl_cmd = ['python', 'enable_ssl.py', '--machine_list', ' '.join(machine_list)]
-    #print(enable_ssl_cmd)
-    #proc = Popen(enable_ssl_cmd, stdout=PIPE, stderr=PIPE)
-    #_ssl_out, _ssl_err = proc.communicate()
-    #print(_ssl_out, _ssl_err)
-
     run_pool = Pool(processes=int(4))
     containers = [{'test_type': docker_cmd['test_type'],'alias_name':docker_cmd['alias_name'], 'proc': run_pool.apply_async(docker_cmds_utilities.run_command_in_container, (docker_cmd['run_cmd'], docker_cmd['exec_cmd'], docker_cmd['stop_cmd'], docker_cmd['container_name'], docker_cmd['alias_name'], docker_cmd['database_container'], docker_cmd['database_type'], docker_cmd['network_name'],), {'test_type': docker_cmd['test_type'], 'machine_list': docker_cmd['machine_list']})} for docker_cmd in docker_cmds_list]
 
