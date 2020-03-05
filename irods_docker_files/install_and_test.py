@@ -4,6 +4,7 @@ from subprocess import Popen, PIPE
 
 import argparse
 import ci_utilities
+import glob
 import irods_python_ci_utilities
 import os
 import shutil
@@ -49,9 +50,9 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
     git_checkout_dir = irods_python_ci_utilities.git_clone(git_repo, git_sha)
     plugin_build_dir = '/plugin_mount_dir/{0}'.format(plugin_name)
     if install_externals:
-        plugin_basename = plugin_name + '*'
-        plugin_package = os.path.join(plugin_build_dir, plugin_basename)
-        externals_list = ci_utilities.get_package_dependencies(plugin_package)
+        plugin_basename = plugin_name.replace('_', '-') + '*'
+        plugin_package = glob.glob(os.path.join(plugin_build_dir, irods_python_ci_utilities.get_irods_platform_string(), plugin_basename))
+        externals_list = ci_utilities.get_package_dependencies(''.join(plugin_package))
         ci_utilities.install_externals_from_list(externals_list, get_externals_directory())
 
     python_script = 'irods_consortium_continuous_integration_test_hook.py'
@@ -66,12 +67,6 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
         passthru_args.extend(['--munge_path', 'export PATH=/opt/irods-externals/mungefs1.0.2-0/usr/bin:$PATH'])
 
     output_directory = '/irods_test_env/{0}/{1}/{2}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type)
-
-    if 'audit' in plugin_name:
-        if '--message_broker' in args.passthrough_arguments:
-            message_broker = args.passthrough_arguments.split(' ')[1]
-            output_directory = '/irods_test_env/{0}/{1]/{2}/{3}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type, message_broker)
-
 
     cmd = ['python', python_script, '--output_root_directory', output_directory, '--built_packages_root_directory', plugin_build_dir] + passthru_args
     print(cmd)

@@ -113,7 +113,8 @@ def main():
 
     if not args.is_provider:
         setup_consumer()
-        enable_pam()
+        if args.use_ssl:
+            enable_pam()
         if args.upgrade_test:
             check_ports_open('icat.example.org')
             check_ports_open('resource2.example.org')
@@ -134,7 +135,8 @@ def main():
             check_topo_state('icat.example.org', args.database_type)
     else:
         ci_utilities.setup_irods(args.database_type, 'tempZone', args.database_machine)
-        enable_pam()
+        if args.use_ssl:
+            enable_pam()
         if args.upgrade_test:
             check_ports_open('resource1.example.org')
             check_ports_open('resource2.example.org')

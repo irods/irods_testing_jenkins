@@ -79,31 +79,20 @@
              for(int i = 0; i &lt; base_os.size(); i++) {
                 def os = base_os[i]
                 def run_cmd
+
+                run_cmd = &apos;python run_tests.py --platform_target &apos; + os +
+                          &apos; --image_tag &apos; + PARAMETER_IMAGE_TAG +
+                          &apos; --build_id &apos; + build_id +
+                          &apos; --test_plugin --test_name_prefix ${BUILD_TAG}&apos;+
+                          &apos; --irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR +
+                          &apos; --plugin_build_dir &apos;+ PARAMETER_PLUGIN_BUILD_DIR +
+                          &apos; --plugin_repo &apos; + PARAMETER_PLUGIN_GIT_REPO +
+                          &apos; --plugin_commitish &apos; +PARAMETER_PLUGIN_GIT_COMMITISH +
+                          &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE +
+                          &apos; --output_directory &apos; + output_directory +
+                          &apos; --externals_dir &apos; + PARAMETER_EXTERNALS_ROOT_DIR
                 if(!PARAMETER_ADDITIONAL_PASSTHRU_ARGS.equals(&apos;&apos;)) {
-                    run_cmd = &apos;python run_tests.py --platform_target &apos; + os + 
-                              &apos; --image_tag &apos; + PARAMETER_IMAGE_TAG +
-                              &apos; --build_id &apos; + build_id + 
-                              &apos; --test_plugin --test_name_prefix ${BUILD_TAG}&apos;+
-                              &apos; --irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR + 
-                              &apos; --plugin_build_dir &apos;+ PARAMETER_PLUGIN_BUILD_DIR +
-                              &apos; --plugin_repo &apos; + PARAMETER_PLUGIN_GIT_REPO +
-                              &apos; --plugin_commitish &apos; +PARAMETER_PLUGIN_GIT_COMMITISH +
-                              &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE + 
-                              &apos; --output_directory &apos; + output_directory + 
-                              &apos; --externals_dir &apos; + PARAMETER_EXTERNALS_ROOT_DIR +
-                              &apos; --passthrough_arguments &quot;&apos; + PARAMETER_ADDITIONAL_PASSTHRU_ARGS + &apos;&quot;&apos;
-                } else {
-                    run_cmd = &apos;python run_tests.py --platform_target &apos; + os +
-                              &apos; --image_tag &apos; + PARAMETER_IMAGE_TAG +
-                              &apos; --build_id &apos; + build_id + 
-                              &apos; --test_plugin --test_name_prefix ${BUILD_TAG}&apos; +
-                              &apos; --irods_build_dir &apos; + PARAMETER_IRODS_BUILD_DIR + 
-                              &apos; --plugin_build_dir &apos;+ PARAMETER_PLUGIN_BUILD_DIR + 
-                              &apos; --plugin_repo &apos; + PARAMETER_PLUGIN_GIT_REPO  + 
-                              &apos; --plugin_commitish &apos; +PARAMETER_PLUGIN_GIT_COMMITISH +
-                              &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE + 
-                              &apos; --output_directory &apos; + output_directory +
-                              &apos; --externals_dir &apos; + PARAMETER_EXTERNALS_ROOT_DIR
+                    run_cmd = run_cmd + &apos; --passthrough_arguments &quot;&apos; + PARAMETER_ADDITIONAL_PASSTHRU_ARGS + &apos;&quot;&apos;
                 }
                 parallelBranches[&quot;${os}&quot;] = {
                     sh run_cmd 
