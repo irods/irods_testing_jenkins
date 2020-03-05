@@ -33,8 +33,11 @@ def build_irods_zone(build_tag, base_image, database_type, dockerfile='Dockerfil
         else:
             import configuration
             database_image = configuration.database_dict[database_type]
-            pull_image = ['docker pull {0}'.format(database_image)]
-            subprocess.check_call(pull_image, shell=True)
+            image_exists = ['docker', 'images', '-q', database_image]
+            _out, _err = Popen(image_exists, stdout=PIPE, stderr=PIPE).communicate()
+            if _out == '':
+                pull_image = ['docker pull {0}'.format(database_image)]
+                subprocess.check_call(pull_image, shell=True)
 
 def create_network(network_name):
     check_network = Popen(['docker', 'network', 'ls'], stdout=PIPE, stderr=PIPE)
