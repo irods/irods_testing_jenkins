@@ -30,6 +30,8 @@ def run_tests(image_name, irods_sha, test_name_prefix, cmd_line_args, skip_unit_
     options.append(['--externals_dir', cmd_line_args.externals_dir])
     if skip_unit_tests is False:
         options.append(['--is_unit_test'])
+    if cmd_line_args.run_timing_tests:
+        options.append(['--run_timing_tests'])
 
     run_tests_cmd_list = ['python', 'run_tests_in_parallel.py']
     for option in options:
@@ -92,6 +94,7 @@ def main():
     parser.add_argument('-o', '--output_directory', type=str, required=True)
     parser.add_argument('--passthrough_arguments', type=str)
     parser.add_argument('--skip_unit_tests', action='store_true', default=False)
+    parser.add_argument('--run_timing_tests', action='store_true', default=False)
     
     args = parser.parse_args()
     build_tag = None

@@ -51,6 +51,11 @@
           <defaultValue>true</defaultValue>
         </hudson.model.BooleanParameterDefinition>
         <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_CORE_TIMING_TESTS</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
           <name>PARAMETER_RUN_PLUGIN_TESTS</name>
           <description></description>
           <defaultValue>true</defaultValue>
@@ -113,6 +118,22 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_ICOMMANDS_REPO&apos;, value: PARAMETER_IRODS_ICOMMANDS_REPO],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_ICOMMANDS_COMMITISH&apos;, value: PARAMETER_IRODS_ICOMMANDS_COMMITISH]
             ]
+    }
+    if(PARAMETER_RUN_CORE_TIMING_TESTS == &quot;true&quot;) {
+        stage(&quot;Install and Run iRODS Core Timing Tests&quot;) {
+            build job: &quot;run_irods_tests&quot;, 
+            parameters: [
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_REPO&apos;, value: PARAMETER_IRODS_REPO],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_PARALLELISM&apos;, value: PARAMETER_TEST_PARALLELISM],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR],
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_CORE_TIMING_TESTS&apos;, value: PARAMETER_RUN_CORE_TIMING_TESTS]
+            ]
+        }    
     }
     if(PARAMETER_RUN_CORE_TESTS == &quot;true&quot;) {
         stage(&quot;Install and Run iRODS Core Tests&quot;) {
