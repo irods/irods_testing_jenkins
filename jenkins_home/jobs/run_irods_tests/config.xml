@@ -63,6 +63,11 @@
           <description></description>
           <defaultValue>true</defaultValue>
         </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_CORE_TIMING_TESTS</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
@@ -91,6 +96,9 @@
                               &apos; --externals_dir &apos; + PARAMETER_EXTERNALS_ROOT_DIR
                 if (PARAMETER_RUN_UNIT_TESTS == &quot;false&quot;) {
                     run_cmd = run_cmd + &apos; --skip_unit_tests&apos;
+                }
+                if (PARAMETER_RUN_CORE_TIMING_TESTS == &quot;true&quot;) {
+                    run_cmd = run_cmd + &apos; --run_timing_tests&apos;
                 }
                 parallelBranches[&quot;${os}&quot;] = {
                     sh run_cmd 

@@ -84,17 +84,23 @@ def main():
     parser.add_argument('--irods_commitish', type=str, required=True)
     parser.add_argument('--test_parallelism', type=str, default='4', required=True)
     parser.add_argument('--is_unit_test', action='store_true', default=False)
+    parser.add_argument('--run_timing_tests', action='store_true', default=False)
     args = parser.parse_args()
 
     # Add unit-test commands to the list.
     docker_cmds_list = []
     irods_sha = ci_utilities.get_sha_from_commitish(args.irods_repo, args.irods_commitish)
-    if args.is_unit_test:
-        test_list = download_list_of_tests(args.irods_repo, irods_sha, 'unit_tests/unit_tests_list.json')
-        docker_cmds_list.extend(to_docker_commands(test_list, args, args.is_unit_test))
 
-    # Add core-test commands to the list.
-    test_list = download_list_of_tests(args.irods_repo, irods_sha, 'scripts/core_tests_list.json')
+    if args.run_timing_tests:
+        test_list = ['timing_tests']
+    else:
+        if args.is_unit_test:
+            test_list = download_list_of_tests(args.irods_repo, irods_sha, 'unit_tests/unit_tests_list.json')
+            docker_cmds_list.extend(to_docker_commands(test_list, args, args.is_unit_test))
+
+        # Add core-test commands to the list.
+        test_list = download_list_of_tests(args.irods_repo, irods_sha, 'scripts/core_tests_list.json')
+
     docker_cmds_list.extend(to_docker_commands(test_list, args))
 
     print(docker_cmds_list)
