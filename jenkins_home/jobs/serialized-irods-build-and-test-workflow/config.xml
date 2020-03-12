@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.36">
+<flow-definition plugin="workflow-job@2.37">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -96,7 +96,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.80">
     <script>node {
     def job_number = env.BUILD_ID
     def buildOutputDirectory = env.JENKINS_OUTPUT + &apos;/build_irods_on_base/&apos; + job_number
@@ -121,9 +121,9 @@
     }
     if(PARAMETER_RUN_CORE_TIMING_TESTS == &quot;true&quot;) {
         stage(&quot;Install and Run iRODS Core Timing Tests&quot;) {
-            build job: &quot;run_irods_tests&quot;, 
+            build job: &quot;run_irods_tests&quot;,
             parameters: [
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
@@ -131,15 +131,16 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_PARALLELISM&apos;, value: PARAMETER_TEST_PARALLELISM],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR],
-                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_CORE_TIMING_TESTS&apos;, value: PARAMETER_RUN_CORE_TIMING_TESTS]
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_UNIT_TESTS&apos;, value: &quot;false&quot;],
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_TIMING_TESTS&apos;, value: PARAMETER_RUN_CORE_TIMING_TESTS]
             ]
-        }    
+        }
     }
     if(PARAMETER_RUN_CORE_TESTS == &quot;true&quot;) {
         stage(&quot;Install and Run iRODS Core Tests&quot;) {
-            build job: &quot;run_irods_tests&quot;, 
+            build job: &quot;run_irods_tests&quot;,
             parameters: [
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS], 
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
@@ -147,9 +148,10 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_PARALLELISM&apos;, value: PARAMETER_TEST_PARALLELISM],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR],
-                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_UNIT_TESTS&apos;, value: PARAMETER_RUN_CORE_UNIT_TESTS]
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_UNIT_TESTS&apos;, value: PARAMETER_RUN_CORE_UNIT_TESTS],
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_TIMING_TESTS&apos;, value: &quot;false&quot;]
             ]
-        }    
+        }
     }
     if(PARAMETER_RUN_FEDERATION_TESTS == &quot;true&quot;) {
         stage(&quot;Install and Run Federation Tests&quot;) {

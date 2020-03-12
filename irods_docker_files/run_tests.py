@@ -16,7 +16,7 @@ from docker_cmd_builder import DockerCommandsBuilder
 def get_test_name_prefix(base_os, prefix):
     test_name_prefix = base_os + '-' + prefix
 
-def run_tests(image_name, irods_sha, test_name_prefix, cmd_line_args, skip_unit_tests=False):
+def run_tests(image_name, irods_sha, test_name_prefix, cmd_line_args):
     # build options list for run_tests_in_parallel
     options = []
     options.append(['--image_name', image_name])
@@ -28,9 +28,9 @@ def run_tests(image_name, irods_sha, test_name_prefix, cmd_line_args, skip_unit_
     options.append(['--irods_commitish', irods_sha])
     options.append(['--test_parallelism', cmd_line_args.test_parallelism])
     options.append(['--externals_dir', cmd_line_args.externals_dir])
-    if skip_unit_tests is False:
+    if cmd_line_args.skip_unit_tests and cmd_line_arg.skip_unit_tests is False:
         options.append(['--is_unit_test'])
-    if cmd_line_args.run_timing_tests:
+    if cmd_line_args.run_timing_tests and cmd_line_args.run_timing_tests is True:
         options.append(['--run_timing_tests'])
 
     run_tests_cmd_list = ['python', 'run_tests_in_parallel.py']
@@ -110,7 +110,7 @@ def main():
 
     if not args.test_plugin:
         irods_sha = ci_utilities.get_sha_from_commitish(args.irods_repo, args.irods_commitish)
-        run_tests(build_tag, irods_sha, test_name_prefix, args, args.skip_unit_tests)
+        run_tests(build_tag, irods_sha, test_name_prefix, args)
     else:
         plugin_repo = args.plugin_repo
         plugin_repo_split = plugin_repo.split('/')
