@@ -25,7 +25,7 @@
         <hudson.model.StringParameterDefinition>
           <name>PARAMETER_EXTERNALS_GIT_REPO</name>
           <description></description>
-          <defaultValue>https://github.com/irods/externals.git</defaultValue>
+          <defaultValue>https://github.com/irods/externals</defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
