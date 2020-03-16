@@ -18,8 +18,8 @@ def run_tests(test_type, specific_test, federation_args, database_type, use_ssl)
         create_irodsauthuser_account()
 
     test_type_dict = {
-        'topology_icat': '--run_python_suite --topology_test=icat',
-        'topology_resource': '--run_python_suite --include_auth_tests --topology_test=resource',
+        'topology_icat': '--run_python_suite --include_auth_tests --include_timing_tests --topology_test=icat',
+        'topology_resource': '--run_python_suite --include_auth_tests --include_timing_tests --topology_test=resource',
         'federation': '--run_specific_test test_federation --federation {0}'.format(federation_args)
     }
 
