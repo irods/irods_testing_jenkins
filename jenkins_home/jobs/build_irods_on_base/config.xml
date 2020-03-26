@@ -46,6 +46,12 @@
           <defaultValue>master</defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_EXTERNALS_ROOT_DIR</name>
+          <description></description>
+          <defaultValue>None</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
@@ -61,13 +67,14 @@
              def parallelBranches = [:]
              for(int i = 0; i &lt; base_os.size(); i++) {
                 def os = base_os[i]
-                def build_cmd = &apos;python build_irods.py -p &apos; + os +
+                def build_cmd = &apos;python build_irods_wrapper.py -p &apos; + os +
                                 &apos; --image_tag &apos; + PARAMETER_IMAGE_TAG +
                                 &apos; -b &apos; + build_id + 
                                 &apos; --irods_repo &apos; + PARAMETER_IRODS_REPO +
                                 &apos; --irods_commitish &apos; + PARAMETER_IRODS_COMMITISH +
                                 &apos; --icommands_repo &apos; + PARAMETER_IRODS_ICOMMANDS_REPO +
                                 &apos; --icommands_commitish &apos; + PARAMETER_IRODS_ICOMMANDS_COMMITISH +
+                                &apos; --externals_packages_directory &apos; + PARAMETER_EXTERNALS_ROOT_DIR +
                                 &apos; -o &apos; + output_directory
                 def branchName = os.split(&apos;:&apos;)[0]
                 parallelBranches[&quot;${branchName}&quot;] = {
