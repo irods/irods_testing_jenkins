@@ -16,17 +16,15 @@ ENV IRODS_ICOMMANDS_COMMITISH=${arg_icommands_commitish}
 
 ENV IRODS_BUILD_DIRECTORY=/irods_build
 
-RUN git clone $IRODS_REPO && \
-    cd irods && git checkout $IRODS_COMMITISH && \
-    git submodule update --init &&\
-    python irods_consortium_continuous_integration_build_hook.py \
-    --icommands_git_repository $IRODS_ICOMMANDS_REPO \
-    --icommands_git_commitish $IRODS_ICOMMANDS_COMMITISH \
-    --output_root_directory $IRODS_BUILD_DIRECTORY
+ENV IRODS_REPO_DIRECTORY=/irods_git_repo
 
-#RUN cd irods_build && mkdir Ubuntu_16 && cd Ubuntu_16 && touch testFile.txt
+RUN mkdir -p $IRODS_REPO_DIRECTORY &&\
+    chmod -R 775 $IRODS_REPO_DIRECTORY &&\
+    git clone $IRODS_REPO $IRODS_REPO_DIRECTORY && \
+    cd $IRODS_REPO_DIRECTORY && git checkout $IRODS_COMMITISH && \
+    git submodule update --init
 
 # Set command to execute when launching the container.
-ADD copy_to_volume.sh /
-RUN chmod u+x /copy_to_volume.sh
-ENTRYPOINT ["./copy_to_volume.sh"]
+ADD build_irods.py /
+RUN chmod u+x /build_irods.py
+ENTRYPOINT ["python", "build_irods.py"]
