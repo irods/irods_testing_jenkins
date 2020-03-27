@@ -17,10 +17,6 @@ RUN mkdir -p $IRODS_PLUGIN_DIRECTORY &&\
     git clone $PLUGIN_REPO $IRODS_PLUGIN_DIRECTORY && \
     cd $IRODS_PLUGIN_DIRECTORY && git checkout $PLUGIN_COMMITISH
 
-#RUN cd irods_build && mkdir Ubuntu_16 && cd Ubuntu_16 && touch testFile.txt
-
-ENV BUILD_HOOK = $IRODS_PLUGIN_DIRECTORY/irods_consortium_continuous_integration_build_hook.py
-
 # Set command to execute when launching the container.
 ADD build_plugin.py /
 RUN chmod u+x /build_plugin.py
