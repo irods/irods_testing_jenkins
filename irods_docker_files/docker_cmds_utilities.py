@@ -110,12 +110,12 @@ def install_ssl_files(machine_list):
 def copy_file_to_machines(machine_list, src, dst):
     if machine_list is not None:
         for machine in machine_list.split(' '):
-            print(machine)
-            print(src, ' --- ', dst)
-            print(os.path.exists(src))
+            print('copying [{0}] (exists:{1}) to dst [{2}] on container [{3}]'.format(str(src), str(os.path.exists(src)), str(dst), str(machine)))
             copy_cmd = "docker cp {0} {1}:{2}".format(src, machine, dst)
-            print(copy_cmd)
-            copy_proc = subprocess.check_call(copy_cmd, shell=True)
+            running = is_container_running(machine)
+            if running:
+                print(copy_cmd)
+                copy_proc = subprocess.check_call(copy_cmd, shell=True)
 
 def create_rsa_keyfile(filename):
     subprocess.check_call(['openssl', 'genrsa', '-out', filename])
@@ -164,11 +164,12 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias
     run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
     _out, _err = run_proc.communicate()
     if database_container is not None:
-        if 'test_type' in kwargs and kwargs['test_type'] == 'standalone_icat':
-            create_network(network_name)
-            run_database(database_type, database_container, alias_name, network_name)
-        if 'test_type' in kwargs and 'topology' in kwargs['test_type'] and 'machine_list' in kwargs:
-            install_ssl_files(kwargs['machine_list'])
+        if 'test_type' in kwargs:
+            if kwargs['test_type'] == 'standalone_icat':
+                create_network(network_name)
+                run_database(database_type, database_container, alias_name, network_name)
+            if 'topology' in kwargs['test_type'] and 'machine_list' in kwargs and kwargs['use_ssl'] is True and alias_name == 'icat.example.org':
+                install_ssl_files(kwargs['machine_list'])
 
         if is_container_running(irods_container):
             connect_to_network(irods_container, alias_name, network_name)
@@ -196,6 +197,7 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias
         _exec_rc = run_test_proc.returncode
 
     # stop the container
+    print('stopping container [' + irods_container + ']')
     Popen(stop_cmd).wait()
     if database_container is not None:
         if not 'resource' in alias_name:
