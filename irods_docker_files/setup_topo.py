@@ -23,19 +23,15 @@ def get_externals_directory():
     return '/irods_externals'
 
 def check_ports_open(machine_name):
-    print(machine_name)
     listen_cmd = ['nc', '-vz', machine_name, '1247']
     status = 'refused'
     while status == 'refused':
         proc = subprocess.Popen(listen_cmd, stdout = PIPE, stderr = PIPE)
         _out, _err = proc.communicate()
-        print('_err ', _err)
         if 'Connection refused' in (_err):
             time.sleep(1)
         if 'open' in (_err):
             status = 'open'
-        print('status ', status)
-
     return status
 
 def set_univmss():
@@ -57,8 +53,9 @@ def setup_consumer():
 
 def run_tests(test_type, test_name, database, use_ssl):
     print("let's try to run tests")
-    ssl_string = '--use_ssl' if use_ssl else ''
-    test_cmd = ['python run_tests_in_zone.py --test_type {0} --specific_test {1} --database_type {2} {3}'.format(test_type, test_name, database, ssl_string)]
+    test_cmd = ['python', 'run_tests_in_zone.py', '--test_type', test_type, '--specific_test', test_name, '--database_type', database]
+    if use_ssl:
+        test_cmd.append('--use_ssl')
     print(test_cmd)
     _rc, _out, _err = irods_python_ci_utilities.subprocess_get_output(test_cmd, shell=True, check_rc=True)
     return _rc
@@ -120,18 +117,24 @@ def main():
             check_ports_open('resource2.example.org')
             check_ports_open('resource3.example.org')
             ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
+
+        # TODO: wait for provider to enable ssl...
+        if args.use_ssl:
+            import enable_ssl
+            time.sleep(60)
+            print('enabling SSL on [' + args.alias_name + ']')
+            enable_ssl.enable_ssl()
+
         if args.test_type == 'topology_resource' and args.alias_name == 'resource1.example.org':
             status = check_ports_open('icat.example.org')
             if status == 'open':
-                if args.use_ssl:
-                     import enable_ssl
-                     enable_ssl.enable_ssl()
                 rc = run_tests(args.test_type, args.test_name, args.database_type, args.use_ssl)
                 sys.exit(rc)
         else:
+            print('waiting on topology to be up:[' + args.alias_name + ']')
+            print('[{0}] waiting for [{1}] to stand up irods'.format(args.alias_name, 'icat.example.org'))
             check_ports_open('icat.example.org')
-            check_ports_open('resource2.example.org')
-            check_ports_open('resource3.example.org')
+            print('checking topo state on [' + args.alias_name + ']')
             check_topo_state('icat.example.org', args.database_type)
     else:
         ci_utilities.setup_irods(args.database_type, 'tempZone', args.database_machine)
@@ -142,12 +145,27 @@ def main():
             check_ports_open('resource2.example.org')
             check_ports_open('resource3.example.org')
             ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
+
+        # Do not enable SSL before consumers have had a chance to set up
+        check_ports_open('resource1.example.org')
+        check_ports_open('resource2.example.org')
+        check_ports_open('resource3.example.org')
+        if args.use_ssl:
+            import enable_ssl
+            # TODO: Remove timing-based solution
+            time.sleep(60)
+            print('enabling ssl on [' + args.alias_name + ']')
+            enable_ssl.enable_ssl()
+            time.sleep(100)
+
         if args.test_type == 'topology_icat':
+            print('[{0}] waiting for [{1}] to stand up irods'.format(args.alias_name, 'resource1.example.org'))
             status = check_ports_open('resource1.example.org')
+            print('[{0}] waiting for [{1}] to stand up irods'.format(args.alias_name, 'resource2.example.org'))
+            check_ports_open('resource2.example.org')
+            print('[{0}] waiting for [{1}] to stand up irods'.format(args.alias_name, 'resource3.example.org'))
+            check_ports_open('resource3.example.org')
             if status == 'open':
-                if args.use_ssl:
-                     import enable_ssl
-                     enable_ssl.enable_ssl()
                 rc = run_tests(args.test_type, args.test_name, args.database_type, args.use_ssl)
                 sys.exit(rc)
         else:

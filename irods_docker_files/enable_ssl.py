@@ -1,13 +1,14 @@
 #!/usr/bin/python
 from __future__ import print_function
-from subprocess import Popen, PIPE
 
 import argparse
 import json
 import os
-import subprocess
+import shutil
 import tempfile
 import time
+from pwd import getpwnam
+from grp import getgrnam
 
 rsa_keyfile_path = '/etc/irods/server.key'
 ssl_certificate_path = '/etc/irods/server.crt'
@@ -19,18 +20,15 @@ def enable_ssl():
     update_core_re()
 
 def change_permissions():
-    files_to_copy = [('/ssl_keys/server.key', rsa_keyfile_path, '0600'),
-                     ('/ssl_keys/server.crt', ssl_certificate_path, '0666'),
-                     ('/ssl_keys/dhparams.pem', diffie_hellman_parameters_path, '0600')]
-    
+    files_to_copy = [('/ssl_keys/server.key', rsa_keyfile_path, 0o600),
+                     ('/ssl_keys/server.crt', ssl_certificate_path, 0o666),
+                     ('/ssl_keys/dhparams.pem', diffie_hellman_parameters_path, 0o600)]
     for src, dst, perms in files_to_copy:
-        while True:
-            if os.path.exists(src):
-                subprocess.check_call(['cp', src, dst])
-                subprocess.check_call(['chown', 'irods:irods', dst])
-                subprocess.check_call(['chmod', perms, dst])
-                break
-            time.sleep(1)
+        shutil.copy(src, dst)
+        uid = getpwnam('irods').pw_uid
+        gid = getgrnam('irods').gr_gid
+        os.chown(dst, uid, gid)
+        os.chmod(dst, perms)
 
 def update_irods_environment():
     filename = '/var/lib/irods/.irods/irods_environment.json'
@@ -51,7 +49,6 @@ def update_irods_environment():
 def update_core_re():
     import fileinput
     import re
-    
     for line in fileinput.FileInput("/etc/irods/core.re", inplace=1, backup='.bak'):
         line = re.sub(r'^acPreConnect\(\*OUT\) \{ \*OUT="CS_NEG_(DONT_CARE|REFUSE)"; \}$', 'acPreConnect(*OUT) { *OUT="CS_NEG_REQUIRE"; }', line.rstrip())
         print(line)
