@@ -46,6 +46,12 @@
           <defaultValue>postgres</defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_EXTERNALS_ROOT_DIR</name>
+          <description></description>
+          <defaultValue>None</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
@@ -61,7 +67,8 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: PARAMETER_IMAGE_TAG],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_REPO&apos;, value: PARAMETER_PLUGIN_GIT_REPO],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR]
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR]
             ]
         print(buildOutputDirectory)
     }
@@ -75,6 +82,7 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_PLUGIN_GIT_COMMITISH],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: PARAMETER_IRODS_BUILD_DIR],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_BUILD_DIR&apos;, value: buildOutputDirectory],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
             ]
     }
