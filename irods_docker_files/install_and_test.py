@@ -52,26 +52,32 @@ def checkout_git_repo_and_run_test_hook(git_repo, git_commitish, passthrough_arg
     git_sha = ci_utilities.get_sha_from_commitish(git_repo, git_commitish)
     git_checkout_dir = irods_python_ci_utilities.git_clone(git_repo, git_sha)
     plugin_build_dir = '/plugin_mount_dir/{0}'.format(plugin_name)
-    if install_externals:
-        plugin_basename = plugin_name.replace('_', '-') + '*'
-        plugin_package = glob.glob(os.path.join(plugin_build_dir, irods_python_ci_utilities.get_irods_platform_string(), plugin_basename))
-        externals_list = ci_utilities.get_package_dependencies(''.join(plugin_package))
-        ci_utilities.install_externals_from_list(externals_list, get_externals_directory())
 
-    python_script = 'irods_consortium_continuous_integration_test_hook.py'
     passthru_args = []
     if passthrough_arguments is not None:
         for args in passthrough_arguments.split(','):
             arg1 = args.split(' ')
             passthru_args = passthru_args + arg1
 
-    if 'irods_capability_storage_tiering' in plugin_name:
+    if 'kerberos' in plugin_name:
+        plugin_name = plugin_name.replace('kerberos', 'krb')
+
+    if 'capability_storage_tiering' in plugin_name:
         if len(passthru_args) > 0:
-            plugin_name = 'irods_capability_unified_storage_tiering'
+            plugin_name = 'irods_rule_engine_plugin_unified_storage_tiering'
         passthru_args.extend(['--munge_path', 'export PATH={}:$PATH'.format(get_mungefs_directory())])
 
-    output_directory = '/irods_test_env/{0}/{1}/{2}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type)
+    plugin_basename = plugin_name.replace('_', '-') + '*'
+    plugin_package = glob.glob(os.path.join(plugin_build_dir, irods_python_ci_utilities.get_irods_platform_string(), plugin_basename))
 
+    if install_externals:
+        externals_list = ci_utilities.get_package_dependencies(''.join(plugin_package))
+        if len(externals_list) > 0:
+            ci_utilities.install_externals_from_list(externals_list, get_externals_directory())
+
+    python_script = 'irods_consortium_continuous_integration_test_hook.py'
+    output_directory = '/irods_test_env/{0}/{1}/{2}'.format(plugin_name, irods_python_ci_utilities.get_irods_platform_string(), database_type)
+    time.sleep(10)
     cmd = ['python', python_script, '--output_root_directory', output_directory, '--built_packages_root_directory', plugin_build_dir] + passthru_args
     print(cmd)
     return irods_python_ci_utilities.subprocess_get_output(cmd, cwd=git_checkout_dir, check_rc=True)

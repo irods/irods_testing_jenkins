@@ -70,7 +70,7 @@
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
     <script>node {
      def build_id = env.BUILD_ID
-     def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + PARAMETER_IMAGE_TAG
+     def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + build_id
      def dockerfile_dir = env.GLOBAL_PARAMETER_DOCKER_REPO
      dir(dockerfile_dir) {
          stage(&apos;Install And Run Tests&apos;) {
@@ -78,9 +78,7 @@
              def parallelBranches = [:]
              for(int i = 0; i &lt; base_os.size(); i++) {
                 def os = base_os[i]
-                def run_cmd
-
-                run_cmd = &apos;python run_tests.py --platform_target &apos; + os +
+                def run_cmd = &apos;python run_tests.py --platform_target &apos; + os +
                           &apos; --image_tag &apos; + PARAMETER_IMAGE_TAG +
                           &apos; --build_id &apos; + build_id +
                           &apos; --test_plugin --test_name_prefix ${BUILD_TAG}&apos;+
