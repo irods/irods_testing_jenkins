@@ -66,8 +66,11 @@ def run_plugin_tests(image_name, plugin_sha, machine_name, plugin_name, test_nam
         print('OS not supported')
 
     database_container = test_name_prefix + '_' + plugin_name + '_' + cmd_line_args.database_type + '-database'
-    network_name = test_name_prefix + '_' + cmd_line_args.database_type + '_' + plugin_name
+    network_name = test_name_prefix + '_' + cmd_line_args.database_type
     alias_name = 'icat.example.org'
+
+    print('run_cmd --> ', run_cmd)
+    print('exec_cmd --> ', exec_cmd)
 
     docker_cmds_utilities.create_network(network_name)
     docker_cmds_utilities.run_database(cmd_line_args.database_type, database_container, alias_name, network_name)

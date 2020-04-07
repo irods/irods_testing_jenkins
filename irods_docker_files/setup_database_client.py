@@ -79,7 +79,7 @@ def configure_client_apt(database):
 
 def configure_client_yum(database):
     if database == 'postgres':
-        irods_python_ci_utilities.install_os_packages(['postgresql', 'odbc-postgresql', 'unixodbc', 'super'])
+        irods_python_ci_utilities.install_os_packages(['postgresql-odbc', 'unixODBC', 'unixODBC-devel', 'super'])
     elif database == 'mysql' or database == 'mariadb':
         pass
     elif database == 'oracle':
