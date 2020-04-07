@@ -8,5 +8,5 @@ os_identifier_dict = {
 database_dict = {
     'mariadb': 'mariadb:10.1',
     'mysql': 'mysql:5.7',
-    'postgres': 'postgres:12.1'
+    'postgres': 'postgres:10.12'
 }
