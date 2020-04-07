@@ -66,7 +66,12 @@
           <defaultValue>true</defaultValue>
         </hudson.model.BooleanParameterDefinition>
         <hudson.model.BooleanParameterDefinition>
-          <name>PARAMETER_RUN_TOPOLOGY_TESTS</name>
+          <name>PARAMETER_RUN_TOPOLOGY_ICAT_TESTS</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PARAMETER_RUN_TOPOLOGY_RESOURCE_TESTS</name>
           <description></description>
           <defaultValue>true</defaultValue>
         </hudson.model.BooleanParameterDefinition>
@@ -133,7 +138,7 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR],
                 [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_CORE_TIMING_TESTS&apos;, value: PARAMETER_RUN_CORE_TIMING_TESTS]
             ]
-        }    
+        }
     }
     if(PARAMETER_RUN_CORE_TESTS == &quot;true&quot;) {
         stage(&quot;Install and Run iRODS Core Tests&quot;) {
@@ -175,18 +180,19 @@
             ]
         }  
     }
-    if(PARAMETER_RUN_TOPOLOGY_TESTS == &quot;true&quot;) {
+    if(PARAMETER_RUN_TOPOLOGY_ICAT_TESTS == &quot;true&quot;) {
         stage(&quot;Install and Run Topology Tests&quot;) {
             build job:&quot;run_tests_on_topology&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_icat&apos;]
             ]
         }
     }
-    if(PARAMETER_RUN_TOPOLOGY_TESTS == &quot;true&quot; &amp;&amp; PARAMETER_ENABLE_SSL == &quot;true&quot;) {
+    if(PARAMETER_RUN_TOPOLOGY_ICAT_TESTS == &quot;true&quot; &amp;&amp; PARAMETER_ENABLE_SSL == &quot;true&quot;) {
         stage(&quot;Install and Run Topology Tests With SSL&quot;) {
             build job:&quot;run_tests_on_topology&quot;,
             parameters: [
@@ -194,6 +200,32 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_icat&apos;],
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_ENABLE_SSL&apos;, value: PARAMETER_ENABLE_SSL]
+            ]
+        }
+    }
+    if(PARAMETER_RUN_TOPOLOGY_RESOURCE_TESTS == &quot;true&quot;) {
+        stage(&quot;Install and Run Topology Tests&quot;) {
+            build job:&quot;run_tests_on_topology&quot;,
+            parameters: [
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_resource&apos;]
+            ]
+        }
+    }
+    if(PARAMETER_RUN_TOPOLOGY_RESOURCE_TESTS == &quot;true&quot; &amp;&amp; PARAMETER_ENABLE_SSL == &quot;true&quot;) {
+        stage(&quot;Install and Run Topology Tests With SSL&quot;) {
+            build job:&quot;run_tests_on_topology&quot;,
+            parameters: [
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_resource&apos;]
                 [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_ENABLE_SSL&apos;, value: PARAMETER_ENABLE_SSL]
             ]
         }
