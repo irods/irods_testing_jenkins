@@ -19,7 +19,10 @@ def build_irods_in_containers(base_os, image_tag, build_id, irods_repo, irods_sh
     save_irods_build(build_tag, output_directory, externals_dir, icommands_repo, icommands_sha)
 
 def save_irods_build(image_name, output_directory, externals_dir, icommands_repo, icommands_sha):
-    save_cmd = ['docker run --rm -v {output_directory}:/jenkins_output -v {externals_dir}:/irods_externals {image_name} -o /jenkins_output -e /irods_externals --icommands_git_repository {icommands_repo} --icommands_git_commitish {icommands_sha}'.format(**locals())] 
+    if externals_dir is None or externals_dir == 'None':
+        save_cmd = ['docker run --rm -v {output_directory}:/jenkins_output {image_name} -o /jenkins_output --icommands_git_repository {icommands_repo} --icommands_git_commitish {icommands_sha}'.format(**locals())]
+    else:
+        save_cmd = ['docker run --rm -v {output_directory}:/jenkins_output -v {externals_dir}:/irods_externals {image_name} -o /jenkins_output -e /irods_externals --icommands_git_repository {icommands_repo} --icommands_git_commitish {icommands_sha}'.format(**locals())] 
     save_build = subprocess.check_call(save_cmd, shell=True)
 
 def main():
@@ -39,6 +42,7 @@ def main():
     print('irods_commitish:'+args.irods_commitish)
     print('icommands_repo:'+args.icommands_repo)
     print('icommands_commitish:'+args.icommands_commitish)
+    print('externals_packages_directory:'+args.externals_packages_directory)
 
     irods_sha = ci_utilities.get_sha_from_commitish(args.irods_repo, args.irods_commitish)
     icommands_sha = ci_utilities.get_sha_from_commitish(args.icommands_repo, args.icommands_commitish)

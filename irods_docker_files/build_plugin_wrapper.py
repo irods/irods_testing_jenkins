@@ -23,7 +23,10 @@ def build_plugins_in_containers(base_os, image_tag, build_id, plugin_repo, plugi
     save_plugin_build(build_tag, irods_packages_directory, externals_packages_directory, plugin_build_dir)
 
 def save_plugin_build(image_name, irods_packages_directory, externals_dir, output_directory):
-    save_cmd = ['docker run --rm -v {0}:/irods_build  -v {1}:/irods_externals -v {2}:/plugin_build_output {3} -o /plugin_build_output -b /irods_build -e /irods_externals'.format(irods_packages_directory, externals_dir, output_directory, image_name)] 
+    if externals_dir is None or externals_dir == 'None':
+        save_cmd = ['docker run --rm -v {irods_packages_directory}:/irods_build -v {output_directory}:/plugin_build_output {image_name} -o /plugin_build_output -b /irods_build'.format(**locals())]
+    else:
+        save_cmd = ['docker run --rm -v {irods_packages_directory}:/irods_build  -v {externals_dir}:/irods_externals -v {output_directory}:/plugin_build_output {image_name} -o /plugin_build_output -b /irods_build -e /irods_externals'.format(**locals())]
     save_build = subprocess.check_call(save_cmd, shell=True)
 
 def main():
