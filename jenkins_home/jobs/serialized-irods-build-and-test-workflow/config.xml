@@ -181,7 +181,7 @@
         }  
     }
     if(PARAMETER_RUN_TOPOLOGY_ICAT_TESTS == &quot;true&quot;) {
-        stage(&quot;Install and Run Topology Tests&quot;) {
+        stage(&quot;Install and Run Topology Tests on Provider&quot;) {
             build job:&quot;run_tests_on_topology&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
@@ -193,7 +193,7 @@
         }
     }
     if(PARAMETER_RUN_TOPOLOGY_ICAT_TESTS == &quot;true&quot; &amp;&amp; PARAMETER_ENABLE_SSL == &quot;true&quot;) {
-        stage(&quot;Install and Run Topology Tests With SSL&quot;) {
+        stage(&quot;Install and Run Topology Tests With SSL on Provider&quot;) {
             build job:&quot;run_tests_on_topology&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
@@ -206,7 +206,7 @@
         }
     }
     if(PARAMETER_RUN_TOPOLOGY_RESOURCE_TESTS == &quot;true&quot;) {
-        stage(&quot;Install and Run Topology Tests&quot;) {
+        stage(&quot;Install and Run Topology Tests on Consumer&quot;) {
             build job:&quot;run_tests_on_topology&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
@@ -218,7 +218,7 @@
         }
     }
     if(PARAMETER_RUN_TOPOLOGY_RESOURCE_TESTS == &quot;true&quot; &amp;&amp; PARAMETER_ENABLE_SSL == &quot;true&quot;) {
-        stage(&quot;Install and Run Topology Tests With SSL&quot;) {
+        stage(&quot;Install and Run Topology Tests With SSL on Consumer&quot;) {
             build job:&quot;run_tests_on_topology&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
