@@ -27,15 +27,15 @@ def build_irods_zone(build_tag, base_image, database_type, dockerfile='Dockerfil
     docker_cmd =  ['docker build -t {0} --build-arg base_image={1} -f {2} .'.format(build_tag, base_image, dockerfile)]
     run_build = subprocess.check_call(docker_cmd, shell = True)
     if install_database:
-        if database_type == 'oracle':
-            docker_cmd = ['docker build -t {0} -f Dockerfile.xe .'.format('oracle/database:11.2.0.2-xe')]
-            run_build = subprocess.check_call(docker_cmd, shell = True)
-        else:
-            import configuration
-            database_image = configuration.database_dict[database_type]
-            image_exists = ['docker', 'images', '-q', database_image]
-            _out, _err = Popen(image_exists, stdout=PIPE, stderr=PIPE).communicate()
-            if _out == '':
+        import configuration
+        database_image = configuration.database_dict[database_type]
+        image_exists = ['docker', 'images', '-q', database_image]
+        _out, _err = Popen(image_exists, stdout=PIPE, stderr=PIPE).communicate()
+        if _out == '':
+            if database_type == 'oracle':
+                docker_cmd = ['docker build -t {0} -f Dockerfile.xe .'.format(database_image)]
+                run_build = subprocess.check_call(docker_cmd, shell = True)
+            else:
                 pull_image = ['docker pull {0}'.format(database_image)]
                 subprocess.check_call(pull_image, shell=True)
 
@@ -131,13 +131,15 @@ def create_diffie_hellman_parameters(filename):
 
 def run_database(database_type, database_container, alias_name, network_name):
     database_alias = 'database.example.org'
+    import configuration
+    database_image = configuration.database_dict[database_type]
+
     if database_type == 'oracle':
         database_alias = 'oracle.example.org'
-        run_cmd = ['docker', 'run', '-d', '--rm',  '--name', database_container, '--shm-size=1g', '-e', 'ORACLE_PWD=testpassword', 'oracle/database:11.2.0.2-xe']
+        run_cmd = ['docker', 'run', '-d', '--rm',  '--name', database_container, '-h', database_alias, '--shm-size=1g', '-e', 'ORACLE_PWD=testpassword', database_image]
+        print('database_run_cmd --> ', run_cmd)
     else:
-        import configuration
 
-        database_image = configuration.database_dict[database_type]
         run_cmd = ['docker', 'run', '-d', '--rm',  '--name', database_container]
         if database_type == 'postgres':
             database_alias = 'postgres.example.org'
@@ -153,11 +155,11 @@ def run_database(database_type, database_container, alias_name, network_name):
         run_cmd.extend(['-e', passwd_env_var, '-h', database_alias, database_image])
         print('database_run_cmd --> ', run_cmd)
 
-        run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
-        _out, _err = run_proc.communicate()
-        _running = is_container_running(database_container)
-        if _running:
-            connect_to_network(database_container, database_alias, network_name)
+    run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
+    _out, _err = run_proc.communicate()
+    _running = is_container_running(database_container)
+    if _running:
+        connect_to_network(database_container, database_alias, network_name)
 
 def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias_name, database_container, database_type, network_name, **kwargs):
     # the docker run command (stand up a container)
