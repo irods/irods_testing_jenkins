@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.36">
+<flow-definition plugin="workflow-job@2.37">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -101,7 +101,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.80">
     <script>node {
     def job_number = env.BUILD_ID
     def buildOutputDirectory = env.JENKINS_OUTPUT + &apos;/build_irods_on_base/&apos; + job_number
@@ -188,7 +188,7 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
-                [$class: &apos;ChoiceParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_icat&apos;]
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_icat&apos;]
             ]
         }
     }
