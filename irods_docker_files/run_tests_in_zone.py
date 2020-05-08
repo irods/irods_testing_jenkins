@@ -17,11 +17,20 @@ def run_tests(test_type, specific_test, federation_args, database_type, use_ssl)
     if test_type != 'federation':
         create_irodsauthuser_account()
 
-    test_type_dict = {
-        'topology_icat': '--run_python_suite --include_auth_tests --include_timing_tests --topology_test=icat',
-        'topology_resource': '--run_python_suite --include_auth_tests --include_timing_tests --topology_test=resource',
-        'federation': '--run_specific_test test_federation --federation {0}'.format(federation_args)
-    }
+    if use_ssl:
+        ssl_string = '--use_ssl'
+        test_type_dict = {
+            'topology_icat': '--run_python_suite --include_auth_tests --include_timing_tests --topology_test=icat',
+            'topology_resource': '--run_python_suite --include_auth_tests --include_timing_tests --topology_test=resource',
+            'federation': '--run_specific_test test_federation --federation {0}'.format(federation_args)
+        }
+    else:
+        ssl_string = ''
+        test_type_dict = {
+            'topology_icat': '--run_python_suite --include_timing_tests --topology_test=icat',
+            'topology_resource': '--run_python_suite --include_timing_tests --topology_test=resource',
+            'federation': '--run_specific_test test_federation --federation {0}'.format(federation_args)
+        }
 
     if specific_test is None or specific_test == 'None':
         test_type_argument = test_type_dict[test_type]
@@ -40,8 +49,6 @@ def run_tests(test_type, specific_test, federation_args, database_type, use_ssl)
         if irods_version < (4, 2):
             irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'mkdir /var/lib/irods/log'], check_rc=True)
             irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'echo "" > /var/lib/irods/scripts/irods/database_connect.py'], check_rc=True)
-
-    ssl_string = '--use_ssl' if use_ssl else ''
 
     try:
         test_output_file = '/var/lib/irods/log/test_output.log'
