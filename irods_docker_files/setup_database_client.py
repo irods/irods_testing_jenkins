@@ -81,7 +81,7 @@ def configure_client_yum(database):
     if database == 'postgres':
         irods_python_ci_utilities.install_os_packages(['postgresql-odbc', 'unixODBC', 'unixODBC-devel', 'super'])
     elif database == 'mysql' or database == 'mariadb':
-        pass
+        irods_python_ci_utilities.install_os_packages(['unixODBC', 'unixODBC-devel', 'super'])
     elif database == 'oracle':
         install_oracle_dependencies()
         install_oracle_client()
