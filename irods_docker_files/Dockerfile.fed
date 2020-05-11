@@ -13,6 +13,7 @@ RUN chmod u+x /setup_database_client.py
 COPY install_externals.py /install_externals.py
 
 COPY psql_other_zone.input /psql_other_zone.input
+COPY mysql_other_zone.input /mysql_other_zone.input
 COPY zones.json /zones.json
 COPY get_irods_version.py /
 COPY ci_utilities.py /ci_utilities.py
