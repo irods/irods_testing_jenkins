@@ -282,7 +282,13 @@ def setup_irods(database_type, zone_name='tempZone', database_machine=None):
         change_setup_file(database_type, database_alias, input_file)
         run_setup_script(export_str, input_file)
     else:
-        subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /psql_other_zone.input'], shell=True)
+        if database_type == 'postgres':
+            subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /psql_other_zone.input'], shell=True)
+        elif database_type == 'mysql' or database_type == 'mariadb':
+            subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /mysql_other_zone.input'], shell=True)
+        else:
+            print(database_type, ' not supported')
+            return
 
 def upgrade(upgrade_packages_directory, database_type, install_externals, externals_directory=None, is_provider=True):
     initial_version = get_irods_version()
