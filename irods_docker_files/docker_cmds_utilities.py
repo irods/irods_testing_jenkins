@@ -149,7 +149,7 @@ def run_database(database_type, database_container, alias_name, network_name):
         elif database_type == 'mysql' or database_type == 'mariadb':
             database_alias = 'mysql.example.org'
             if 'otherZone' in alias_name:
-                database_alias = 'postgres.otherZone.example.org'
+                database_alias = 'mysql.otherZone.example.org'
             passwd_env_var = 'MYSQL_ROOT_PASSWORD=password'
             run_cmd.extend(['-e', 'MYSQL_DATABASE=ICAT', '-e', 'MYSQL_USER=irods', '-e', 'MYSQL_PASSWORD=testpassword'])
         run_cmd.extend(['-e', passwd_env_var, '-h', database_alias, database_image])
