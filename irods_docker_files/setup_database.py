@@ -53,11 +53,11 @@ def configure_database(database, database_machine, provider_machine, network_nam
         #run_docker_command(['docker', 'exec', database_machine, 'mysqladmin', '--user=root', '--password=password', 'ping'])
         format_str = '{{json .NetworkSettings.Networks.' + network_name + '.IPAddress}}'
         ip_address = get_ipaddress(provider_machine, format_str).strip()
+        run_docker_command(['docker', 'exec', database_machine, 'mysql', '--user=root', '--password=password', '-e', 'drop database if exists ICAT;'])
+        run_docker_command(['docker', 'exec', database_machine, 'mysql', '--user=root', '--password=password', '-e', 'create database ICAT character set latin1 collate latin1_general_cs;'])
         run_docker_command(['docker', 'exec', database_machine, 'mysql', '--user=root', '--password=password', '-e', "CREATE USER 'irods'@{0} IDENTIFIED BY 'testpassword';".format(ip_address)])
         run_docker_command(['docker', 'exec', database_machine, 'mysql', '--user=root', '--password=password', '-e', "GRANT ALL PRIVILEGES ON ICAT.* to 'irods'@{0};".format(ip_address)])
         run_docker_command(['docker', 'exec', database_machine, 'mysql', '--user=root', '--password=password', '-e', 'FLUSH PRIVILEGES;'])
-        run_docker_command(['docker', 'exec', database_machine, 'mysql', '--user=root', '--password=password', '-e', 'drop database if exists ICAT;'])
-        run_docker_command(['docker', 'exec', database_machine, 'mysql', '--user=root', '--password=password', '-e', 'create database ICAT character set latin1 collate latin1_general_cs;'])
     elif database == 'oracle':
         pass
     else:

@@ -43,7 +43,10 @@ def create_federation(federation_tag_list, network_name, cmd_line_args):
     upgrade_mount = None
     run_mount = None
     externals_mount = None
-    mysql_mount = '/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz:/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz'
+
+    distribution_name = cmd_line_args.platform_target.split('_')[0]
+    distribution_version_major = cmd_line_args.platform_target.split('_')[1]
+    mysql_mount = ci_utilities.get_mysql_odbc_connector_volume_mount_string(distribution_name, distribution_version_major, cmd_line_args.mysql_odbc_connector_dir)
 
     zone1 = 'tempZone'
     zone2 = 'otherZone'
@@ -120,6 +123,7 @@ def main():
     parser.add_argument('--zones', type=int, default=2, help='number of zones in the federation')
     parser.add_argument('--database_type', default='postgres', help='database type', required=True)
     parser.add_argument('-o', '--output_directory', type=str, required=False)
+    parser.add_argument('--mysql_odbc_connector_dir', help='path to dir on host containing MySQL ODBC connector', default='/projects/irods/vsphere-testing/externals')
     
     args = parser.parse_args()
 

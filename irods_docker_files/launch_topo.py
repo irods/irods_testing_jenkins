@@ -47,7 +47,10 @@ def create_topology(cmd_line_args, provider_tag, consumer_tag_list, machine_list
 
     run_mount = None
     externals_mount = None
-    mysql_mount = '/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz:/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz'
+
+    distribution_name = cmd_line_args.platform_target.split('_')[0]
+    distribution_version_major = cmd_line_args.platform_target.split('_')[1]
+    mysql_mount = ci_utilities.get_mysql_odbc_connector_volume_mount_string(distribution_name, distribution_version_major, cmd_line_args.mysql_odbc_connector_dir)
 
     provider_name = cmd_line_args.platform_target + '-' + cmd_line_args.test_name_prefix + '-provider'
     machine_list.append(provider_name)
@@ -164,6 +167,7 @@ def main():
     parser.add_argument('--database_type', default='postgres', help='database type', required=True)
     parser.add_argument('-o', '--output_directory', type=str, required=False)
     parser.add_argument('--use_ssl', action='store_true', default=False)
+    parser.add_argument('--mysql_odbc_connector_dir', help='path to dir on host containing MySQL ODBC connector', default='/projects/irods/vsphere-testing/externals')
     
     args = parser.parse_args()
 

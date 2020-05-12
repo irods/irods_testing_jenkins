@@ -15,6 +15,7 @@ RUN chmod u+x /setup_database_client.py
 
 COPY install_externals.py /install_externals.py
 COPY ci_utilities.py /ci_utilities.py
+COPY configuration.py /configuration.py
 COPY irods_consumer.input /irods_consumer.input
 COPY enable_ssl.py /enable_ssl.py
 

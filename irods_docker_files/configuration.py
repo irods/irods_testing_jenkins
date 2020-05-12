@@ -11,3 +11,9 @@ database_dict = {
     'postgres': 'postgres:10.12',
     'oracle': 'oracle/database:11.2.0.2-xe'
 }
+
+# change this to the dirname of the mysql odbc connector archive file
+mysql_odbc_connectors = {
+    'ubuntu_16': 'mysql-connector-odbc-5.3.13-linux-ubuntu16.04-x86-64bit',
+    'ubuntu_18': 'mysql-connector-odbc-5.3.13-linux-ubuntu18.04-x86-64bit'
+}

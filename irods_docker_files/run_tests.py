@@ -28,6 +28,7 @@ def run_tests(image_name, irods_sha, test_name_prefix, cmd_line_args, skip_unit_
     options.append(['--irods_commitish', irods_sha])
     options.append(['--test_parallelism', cmd_line_args.test_parallelism])
     options.append(['--externals_dir', cmd_line_args.externals_dir])
+    options.append(['--mysql_odbc_connector_dir', cmd_line_args.mysql_odbc_connector_dir])
     if skip_unit_tests is False:
         options.append(['--is_unit_test'])
     if cmd_line_args.run_timing_tests:
@@ -44,7 +45,6 @@ def run_plugin_tests(image_name, plugin_sha, machine_name, plugin_name, test_nam
     results_mount = cmd_line_args.output_directory + ':/irods_test_env'
     plugin_mount = cmd_line_args.plugin_build_dir + ':/plugin_mount_dir'
     key_mount = '/projects/irods/vsphere-testing/externals/amazon_web_services-CI.keypair:/projects/irods/vsphere-testing/externals/amazon_web_services-CI.keypair'
-    mysql_mount = '/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz:/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz'
     run_mount = '/tmp/$(mktemp -d):/run'
     externals_mount = cmd_line_args.externals_dir + ':/irods_externals'
 
@@ -56,6 +56,10 @@ def run_plugin_tests(image_name, plugin_sha, machine_name, plugin_name, test_nam
         exec_cmd = centosCmdBuilder.build_exec_cmd()
         stop_cmd = centosCmdBuilder.build_stop_cmd()
     elif 'ubuntu' in machine_name:
+        distribution_name = cmd_line_args.platform_target.split('_')[0]
+        distribution_version_major = cmd_line_args.platform_target.split('_')[1]
+        mysql_mount = ci_utilities.get_mysql_odbc_connector_volume_mount_string(distribution_name, distribution_version_major, cmd_line_args.mysql_odbc_connector_dir)
+
         ubuntuCmdBuilder = DockerCommandsBuilder()
         ubuntuCmdBuilder.plugin_constructor(machine_name, build_mount, plugin_mount, results_mount, key_mount, mysql_mount, None, externals_mount, image_name, 'install_and_test.py', cmd_line_args.database_type, cmd_line_args.plugin_repo, plugin_sha, cmd_line_args.passthrough_arguments)
         
@@ -98,6 +102,7 @@ def main():
     parser.add_argument('--passthrough_arguments', type=str)
     parser.add_argument('--skip_unit_tests', action='store_true', default=False)
     parser.add_argument('--run_timing_tests', action='store_true', default=False)
+    parser.add_argument('--mysql_odbc_connector_dir', help='path to dir on host containing MySQL ODBC connector', default='/projects/irods/vsphere-testing/externals')
     
     args = parser.parse_args()
     build_tag = None

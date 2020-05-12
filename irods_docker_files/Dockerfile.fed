@@ -17,6 +17,7 @@ COPY mysql_other_zone.input /mysql_other_zone.input
 COPY zones.json /zones.json
 COPY get_irods_version.py /
 COPY ci_utilities.py /ci_utilities.py
+COPY configuration.py /configuration.py
 
 ADD run_tests_in_zone.py /
 RUN chmod u+x /run_tests_in_zone.py
