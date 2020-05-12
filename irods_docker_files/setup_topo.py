@@ -53,11 +53,11 @@ def setup_consumer():
 
 def run_tests(test_type, test_name, database, use_ssl):
     print("let's try to run tests")
-    test_cmd = ['python run_tests_in_zone.py --test_type {0} --specific_test {1} --database_type {2}'.format(test_type, test_name, database)]
+    test_cmd = 'python run_tests_in_zone.py --test_type {0} --specific_test {1} --database_type {2}'.format(test_type, test_name, database)
     if use_ssl:
-        test_cmd.append('--use_ssl')
+        test_cmd = test_cmd + ' --use_ssl'
     print(test_cmd)
-    _rc = subprocess.check_call(test_cmd, shell=True)
+    _rc = subprocess.check_call([test_cmd], shell=True)
     return _rc
 
 def check_topo_state(machine_name, database):
@@ -110,12 +110,12 @@ def main():
 
     if not args.is_provider:
         setup_consumer()
+        check_ports_open('icat.example.org')
+        check_ports_open('resource2.example.org')
+        check_ports_open('resource3.example.org')
         if args.use_ssl:
             enable_pam()
         if args.upgrade_test:
-            check_ports_open('icat.example.org')
-            check_ports_open('resource2.example.org')
-            check_ports_open('resource3.example.org')
             ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
 
         # TODO: wait for provider to enable ssl...
@@ -138,20 +138,17 @@ def main():
             check_topo_state('icat.example.org', args.database_type)
     else:
         ci_utilities.setup_irods(args.database_type, 'tempZone', args.database_machine)
+
+        check_ports_open('resource1.example.org')
+        check_ports_open('resource2.example.org')
+        check_ports_open('resource3.example.org')
         if args.use_ssl:
             enable_pam()
         if args.upgrade_test:
-            check_ports_open('resource1.example.org')
-            check_ports_open('resource2.example.org')
-            check_ports_open('resource3.example.org')
             ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
 
         if args.use_ssl:
             import enable_ssl
-            # Do not enable SSL before consumers have had a chance to set up
-            check_ports_open('resource1.example.org')
-            check_ports_open('resource2.example.org')
-            check_ports_open('resource3.example.org')
             # TODO: Remove timing-based solution
             time.sleep(60)
             print('enabling ssl on [' + args.alias_name + ']')
@@ -162,9 +159,9 @@ def main():
             print('[{0}] waiting for [{1}] to stand up irods'.format(args.alias_name, 'resource1.example.org'))
             status = check_ports_open('resource1.example.org')
             print('[{0}] waiting for [{1}] to stand up irods'.format(args.alias_name, 'resource2.example.org'))
-            #check_ports_open('resource2.example.org')
+            check_ports_open('resource2.example.org')
             print('[{0}] waiting for [{1}] to stand up irods'.format(args.alias_name, 'resource3.example.org'))
-            #check_ports_open('resource3.example.org')
+            check_ports_open('resource3.example.org')
             if status == 'open':
                 rc = run_tests(args.test_type, args.test_name, args.database_type, args.use_ssl)
                 sys.exit(rc)
