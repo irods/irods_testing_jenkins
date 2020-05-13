@@ -16,6 +16,8 @@ except ImportError:
 from github import Github
 from subprocess import Popen, PIPE
 
+import configuration
+
 # Dereference commitish (branch name, SHA, partial SHA, etc.) to a full SHA
 def get_sha_from_commitish(_repo, _commitish):
     try:
@@ -357,3 +359,15 @@ stdout: {3}
 stderr: {4}
 '''.format(args, kwargs, p.returncode, out, err))
     return p.returncode, out, err
+
+def get_path_to_mysql_odbc_connector(distribution_name, distribution_version_major, dirname):
+    key = '_'.join([distribution_name, distribution_version_major])
+    filename = '.'.join([configuration.mysql_odbc_connectors[key], 'tar', 'gz'])
+    return os.path.join(dirname, filename)
+
+def get_mysql_odbc_connector_volume_mount_string(distribution_name, distribution_version_major, dirname):
+    mysql_odbc_connector_dirname = '/mysql_odbc_connectors'
+    path_to_file_on_host = get_path_to_mysql_odbc_connector(distribution_name, distribution_version_major, dirname)
+    path_to_file_in_container = get_path_to_mysql_odbc_connector(distribution_name, distribution_version_major, mysql_odbc_connector_dirname)
+    return ':'.join([path_to_file_on_host, path_to_file_in_container, 'ro'])
+

@@ -39,7 +39,6 @@ def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
     results_mount = cmd_line_args.jenkins_output + ':/irods_test_env'
     run_mount = '/tmp/$(mktemp -d):/run'
     externals_mount = cmd_line_args.externals_dir + ':/irods_externals'
-    mysql_mount = '/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz:/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz'
 
     for test in test_list:
         container_name = cmd_line_args.test_name_prefix + '_' + test + '_' + cmd_line_args.database_type
@@ -56,6 +55,11 @@ def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
             exec_cmd = centosCmdBuilder.build_exec_cmd()
             stop_cmd = centosCmdBuilder.build_stop_cmd()
         elif 'ubuntu' in cmd_line_args.image_name:
+            platform = cmd_line_args.image_name.split('-')[0]
+            distribution_name = platform.split('_')[0]
+            distribution_version_major = platform.split('_')[1]
+            mysql_mount = ci_utilities.get_mysql_odbc_connector_volume_mount_string(distribution_name, distribution_version_major, cmd_line_args.mysql_odbc_connector_dir)
+
             ubuntuCmdBuilder = DockerCommandsBuilder()
             ubuntuCmdBuilder.core_constructor(container_name, build_mount, upgrade_mount, results_mount, None, externals_mount, mysql_mount, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, test_type, is_unit_test, True, database_container)
 
@@ -85,6 +89,7 @@ def main():
     parser.add_argument('--test_parallelism', type=str, default='4', required=True)
     parser.add_argument('--is_unit_test', action='store_true', default=False)
     parser.add_argument('--run_timing_tests', action='store_true', default=False)
+    parser.add_argument('--mysql_odbc_connector_dir', help='path to dir on host containing MySQL ODBC connector', default='/projects/irods/vsphere-testing/externals')
     args = parser.parse_args()
 
     # Add unit-test commands to the list.

@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.36">
+<flow-definition plugin="workflow-job@2.39">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -55,10 +55,16 @@
           <description></description>
           <defaultValue>false</defaultValue>
         </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_MYSQL_ODBC_CONNECTOR_DIR</name>
+          <description></description>
+          <defaultValue>/projects/irods/vsphere-testing/externals</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.80">
     <script>node {
      def build_id = env.BUILD_ID
      def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME + &apos;/&apos; + build_id
@@ -78,7 +84,8 @@
                               &apos; -o &apos; + output_directory + 
                               &apos; --database_type &apos; + PARAMETER_DATABASE_TYPE + 
                               &apos; --test_type &apos; + PARAMETER_TEST_TYPE + 
-                              &apos; --specific_test &apos; + PARAMETER_SPECIFIC_TEST
+                              &apos; --specific_test &apos; + PARAMETER_SPECIFIC_TEST +
+                              &apos; --mysql_odbc_connector_dir &apos; + PARAMETER_MYSQL_ODBC_CONNECTOR_DIR
                 if(PARAMETER_ENABLE_SSL == &quot;true&quot;) {
                     run_cmd = run_cmd + &apos; --use_ssl&apos;
                 }

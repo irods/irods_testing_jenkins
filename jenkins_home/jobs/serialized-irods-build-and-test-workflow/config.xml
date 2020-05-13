@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.37">
+<flow-definition plugin="workflow-job@2.39">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -98,6 +98,12 @@
           <defaultValue>None</defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_MYSQL_ODBC_CONNECTOR_DIR</name>
+          <description></description>
+          <defaultValue>/projects/irods/vsphere-testing/externals</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
@@ -136,7 +142,8 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_PARALLELISM&apos;, value: PARAMETER_TEST_PARALLELISM],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR],
-                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_CORE_TIMING_TESTS&apos;, value: PARAMETER_RUN_CORE_TIMING_TESTS]
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_CORE_TIMING_TESTS&apos;, value: PARAMETER_RUN_CORE_TIMING_TESTS],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_MYSQL_ODBC_CONNECTOR_DIR&apos;, value: PARAMETER_MYSQL_ODBC_CONNECTOR_DIR]
             ]
         }
     }
@@ -152,7 +159,8 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_PARALLELISM&apos;, value: PARAMETER_TEST_PARALLELISM],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_EXTERNALS_ROOT_DIR&apos;, value: PARAMETER_EXTERNALS_ROOT_DIR],
-                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_UNIT_TESTS&apos;, value: PARAMETER_RUN_CORE_UNIT_TESTS]
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_RUN_UNIT_TESTS&apos;, value: PARAMETER_RUN_CORE_UNIT_TESTS],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_MYSQL_ODBC_CONNECTOR_DIR&apos;, value: PARAMETER_MYSQL_ODBC_CONNECTOR_DIR]
             ]
         }    
     }
@@ -160,10 +168,11 @@
         stage(&quot;Install and Run Federation Tests&quot;) {
             build job:&quot;run_tests_on_federation&quot;,
             parameters: [
-                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
-                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
-                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
-                    [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_MYSQL_ODBC_CONNECTOR_DIR&apos;, value: PARAMETER_MYSQL_ODBC_CONNECTOR_DIR]
             ]
         }
     }
@@ -176,24 +185,26 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLUGIN_GIT_COMMITISH&apos;, value: PARAMETER_IRODS_COMMITISH],
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE]
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_MYSQL_ODBC_CONNECTOR_DIR&apos;, value: PARAMETER_MYSQL_ODBC_CONNECTOR_DIR]
             ]
         }  
     }
     if(PARAMETER_RUN_TOPOLOGY_ICAT_TESTS == &quot;true&quot;) {
-        stage(&quot;Install and Run Topology Tests on Provider&quot;) {
+        stage(&quot;Install and Run Topology Tests&quot;) {
             build job:&quot;run_tests_on_topology&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_icat&apos;]
+                [$class: &apos;ChoiceParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_icat&apos;],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_MYSQL_ODBC_CONNECTOR_DIR&apos;, value: PARAMETER_MYSQL_ODBC_CONNECTOR_DIR]
             ]
         }
     }
     if(PARAMETER_RUN_TOPOLOGY_ICAT_TESTS == &quot;true&quot; &amp;&amp; PARAMETER_ENABLE_SSL == &quot;true&quot;) {
-        stage(&quot;Install and Run Topology Tests With SSL on Provider&quot;) {
+        stage(&quot;Install and Run Topology Tests With SSL&quot;) {
             build job:&quot;run_tests_on_topology&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
@@ -201,24 +212,13 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_icat&apos;],
-                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_ENABLE_SSL&apos;, value: PARAMETER_ENABLE_SSL]
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_ENABLE_SSL&apos;, value: PARAMETER_ENABLE_SSL],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_MYSQL_ODBC_CONNECTOR_DIR&apos;, value: PARAMETER_MYSQL_ODBC_CONNECTOR_DIR]
             ]
         }
     }
     if(PARAMETER_RUN_TOPOLOGY_RESOURCE_TESTS == &quot;true&quot;) {
-        stage(&quot;Install and Run Topology Tests on Consumer&quot;) {
-            build job:&quot;run_tests_on_topology&quot;,
-            parameters: [
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
-                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_resource&apos;]
-            ]
-        }
-    }
-    if(PARAMETER_RUN_TOPOLOGY_RESOURCE_TESTS == &quot;true&quot; &amp;&amp; PARAMETER_ENABLE_SSL == &quot;true&quot;) {
-        stage(&quot;Install and Run Topology Tests With SSL on Consumer&quot;) {
+        stage(&quot;Install and Run Topology Tests&quot;) {
             build job:&quot;run_tests_on_topology&quot;,
             parameters: [
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
@@ -226,7 +226,21 @@
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
                 [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_resource&apos;],
-                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_ENABLE_SSL&apos;, value: PARAMETER_ENABLE_SSL]
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_MYSQL_ODBC_CONNECTOR_DIR&apos;, value: PARAMETER_MYSQL_ODBC_CONNECTOR_DIR]
+            ]
+        }
+    }
+    if(PARAMETER_RUN_TOPOLOGY_RESOURCE_TESTS == &quot;true&quot; &amp;&amp; PARAMETER_ENABLE_SSL == &quot;true&quot;) {
+        stage(&quot;Install and Run Topology Tests With SSL&quot;) {
+            build job:&quot;run_tests_on_topology&quot;,
+            parameters: [
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_PLATFORM_TARGETS&apos;, value: PARAMETER_PLATFORM_TARGETS],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IMAGE_TAG&apos;, value: job_number],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_IRODS_BUILD_DIR&apos;, value: buildOutputDirectory],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_DATABASE_TYPE&apos;, value: PARAMETER_DATABASE_TYPE],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_TEST_TYPE&apos;, value: &apos;topology_resource&apos;],
+                [$class: &apos;BooleanParameterValue&apos;, name: &apos;PARAMETER_ENABLE_SSL&apos;, value: PARAMETER_ENABLE_SSL],
+                [$class: &apos;StringParameterValue&apos;, name: &apos;PARAMETER_MYSQL_ODBC_CONNECTOR_DIR&apos;, value: PARAMETER_MYSQL_ODBC_CONNECTOR_DIR]
             ]
         }
     }
