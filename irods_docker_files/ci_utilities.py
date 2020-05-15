@@ -290,11 +290,11 @@ def setup_irods(database_type, zone_name='tempZone', database_machine=None):
             print(database_type, ' not supported')
             return
 
-def upgrade(upgrade_packages_directory, database_type, install_externals, externals_directory=None, is_provider=True):
+def upgrade(upgrade_packages_directory, database_type, database_machine, install_externals, externals_directory=None, is_provider=True):
     initial_version = get_irods_version()
     stop_server(initial_version)
     #upgrade packages
-    install_irods_packages(database_type, install_externals, upgrade_packages_directory, externals_directory, upgrade = True, is_provider = is_provider)
+    install_irods_packages(database_type, database_machine, install_externals, upgrade_packages_directory, externals_directory, upgrade = True, is_provider = is_provider)
     final_version = get_irods_version()
     upgrade_core_re(initial_version, final_version)
     stop_server(final_version)
