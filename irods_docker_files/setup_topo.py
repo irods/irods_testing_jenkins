@@ -116,7 +116,7 @@ def main():
         if args.use_ssl:
             enable_pam()
         if args.upgrade_test:
-            ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
+            ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.database_machine, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
 
         # TODO: wait for provider to enable ssl...
         if args.use_ssl:
@@ -145,7 +145,7 @@ def main():
         if args.use_ssl:
             enable_pam()
         if args.upgrade_test:
-            ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
+            ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.database_machine, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
 
         if args.use_ssl:
             import enable_ssl

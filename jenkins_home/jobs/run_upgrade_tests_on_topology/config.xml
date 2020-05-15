@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.36">
+<flow-definition plugin="workflow-job@2.39">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -12,7 +12,8 @@
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
           <name>PARAMETER_PLATFORM_TARGETS</name>
-          <description>ubuntu_16,centos_7</description>
+          <description>Will work for OS&apos;s  Ubuntu 16 and/or CentOS 7
+</description>
           <defaultValue>ubuntu_16,centos_7</defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
@@ -24,19 +25,21 @@
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>PARAMETER_UPGRADE_FROM_PACKAGES_DIR</name>
-          <description></description>
+          <description>Directory where you have old releases of iRODS with builds for Ubuntu 16 and/or CentOS 7.
+e.g. projects/irods/vsphere-testing/releases/4.2.7/packages
+</description>
           <defaultValue></defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>PARAMETER_DATABASE_TYPE</name>
-          <description></description>
-          <defaultValue></defaultValue>
-          <trim>false</trim>
+          <description>if you are upgrading from a version older than 4-2-7 then the database Postgres is only supported</description>
+          <defaultValue>postgres</defaultValue>
+          <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>PARAMETER_UPGRADE_TO_PACKAGES_DIR</name>
-          <description></description>
+          <description>Directory where you have the current release of iRODS with builds for Ubuntu 16 and/or CentOS 7.</description>
           <defaultValue></defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
@@ -59,7 +62,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.80">
     <script>node {
      def build_id = env.BUILD_ID
      
