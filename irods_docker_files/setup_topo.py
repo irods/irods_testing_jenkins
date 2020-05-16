@@ -115,8 +115,17 @@ def main():
         check_ports_open('resource3.example.org')
         if args.use_ssl:
             enable_pam()
+
+        # TODO: wait for provider to upgrade
         if args.upgrade_test:
+            check_ports_open('icat.example.org')
+            check_ports_open('resource2.example.org')
+            check_ports_open('resource3.example.org')
+            time.sleep(60)
             ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.database_machine, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
+            check_ports_open('icat.example.org')
+            check_ports_open('resource2.example.org')
+            check_ports_open('resource3.example.org')
 
         # TODO: wait for provider to enable ssl...
         if args.use_ssl:
@@ -144,8 +153,18 @@ def main():
         check_ports_open('resource3.example.org')
         if args.use_ssl:
             enable_pam()
+
         if args.upgrade_test:
+            check_ports_open('resource1.example.org')
+            check_ports_open('resource2.example.org')
+            check_ports_open('resource3.example.org')
+            # TODO: Remove timing-based solution
+            time.sleep(60)
             ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.database_machine, args.install_externals, get_externals_directory(), is_provider = args.is_provider)
+            check_ports_open('resource1.example.org')
+            check_ports_open('resource2.example.org')
+            check_ports_open('resource3.example.org')
+            time.sleep(100)
 
         if args.use_ssl:
             import enable_ssl
