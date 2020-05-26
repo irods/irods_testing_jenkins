@@ -60,7 +60,10 @@ XE =
 def configure_client_apt(database):
     if database == 'postgres':
         irods_python_ci_utilities.subprocess_get_output(['apt-get', 'update'], check_rc=True)
-        irods_python_ci_utilities.install_os_packages(['postgresql-client', 'odbc-postgresql', 'unixodbc', 'super'])
+        _rc, _out, _err = irods_python_ci_utilities.install_os_packages(['postgresql-client', 'odbc-postgresql', 'unixodbc', 'super'])
+        if _rc != 0:
+            subprocess.check_call('mount -o remount,ro /sys/fs/selinux; apt-get install -y libpq5 postgresql-client odbc-postgresql unixodbc super', shell=True)
+
     elif database == 'mysql':
         #pass
         irods_python_ci_utilities.subprocess_get_output(['apt-get', 'update'], check_rc=True)
