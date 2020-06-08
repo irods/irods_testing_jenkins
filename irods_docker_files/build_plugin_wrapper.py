@@ -28,6 +28,11 @@ def save_plugin_build(image_name, irods_packages_directory, externals_dir, outpu
     else:
         save_cmd = ['docker run --rm -v {irods_packages_directory}:/irods_build  -v {externals_dir}:/irods_externals -v {output_directory}:/plugin_build_output {image_name} -o /plugin_build_output -b /irods_build -e /irods_externals'.format(**locals())]
     save_build = subprocess.check_call(save_cmd, shell=True)
+    remove_image(image_name)
+
+def remove_image(image_name):
+    rm_cmd = ['docker', 'rmi', image_name]
+    subprocess.check_call(rm_cmd, shell=True)
 
 def main():
     parser = argparse.ArgumentParser(description='Build irods in base os-containers')

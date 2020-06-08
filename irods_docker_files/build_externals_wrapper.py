@@ -24,9 +24,9 @@ def save_externals_build(image_name, output_directory, machine_name):
     output_mount = '{0}:/externals_build_output'.format(output_directory)
     run_cmd = ['docker', 'run', '--privileged', '-d', '--rm', '--name',
                machine_name, '-v', output_mount, '-v', cgroup_mount, image_name]
-
+    print(run_cmd)
     exec_cmd = ['docker', 'exec', machine_name, 'python', 'build_externals.py', '--output_directory', '/externals_build_output']
-
+    print(exec_cmd)
     stop_cmd = ['docker', 'stop', machine_name]
 
     run_image = Popen(run_cmd, stdout=PIPE, stderr=PIPE).wait()

@@ -24,6 +24,12 @@ def save_irods_build(image_name, output_directory, externals_dir, icommands_repo
     else:
         save_cmd = ['docker run --rm -v {output_directory}:/jenkins_output -v {externals_dir}:/irods_externals {image_name} -o /jenkins_output -e /irods_externals --icommands_git_repository {icommands_repo} --icommands_git_commitish {icommands_sha}'.format(**locals())] 
     save_build = subprocess.check_call(save_cmd, shell=True)
+    print(image_name)
+    remove_image(image_name)
+
+def remove_image(image_name):
+    rm_cmd = ['docker', 'rmi', image_name]
+    subprocess.check_call(rm_cmd, shell=True)
 
 def main():
     parser = argparse.ArgumentParser(description='Build irods in base os-containers')
