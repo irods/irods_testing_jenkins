@@ -89,7 +89,8 @@ def get_distribution():
                     distribution = 'OtherLinux'
         except:
             # FIXME: MethodMissing, I assume?
-            distribution = platform.dist()[0].capitalize()
+            import distro
+            distribution = distro.linux_distribution()[0].capitalize()
     else:
         distribution = None
     return distribution
@@ -97,9 +98,9 @@ def get_distribution():
 def raise_not_implemented_for_distribution():
     raise NotImplementedError, 'not implemented for distribution [{0}]'.format(get_distribution()), sys.exc_info()[2]
 
-def get_package_dependencies(package_name):
+def get_package_dependencies(package_name, distribution):
     externals_list = []
-    if get_distribution() == 'Centos linux':
+    if distribution == 'Centos linux' or distribution == 'Opensuse leap':
         proc = Popen(['rpm', '-qp', package_name, '--requires', '|', 'grep', 'irods-externals'], stdout=PIPE, stderr=PIPE)
         _out, _err = proc.communicate()
         _out_list = _out.split('\n')
@@ -107,7 +108,7 @@ def get_package_dependencies(package_name):
             if 'irods-externals' in _str:
                 _str = _str.strip() + '*'
                 externals_list.append(_str)
-    elif get_distribution() == 'Ubuntu':
+    elif distribution == 'Ubuntu':
         proc = Popen(['dpkg', '-I', package_name], stdout=PIPE, stderr=PIPE)
         _out, _err = proc.communicate()
         _out_list = _out.split('\n')
@@ -119,7 +120,7 @@ def get_package_dependencies(package_name):
                         dependency = dependency.strip() + '*'
                         externals_list.append(dependency)
     else:
-        print(get_distribution(), ' distribution not supported')
+        print(distribution, ' distribution not supported')
 
     return ','.join(externals_list)
 
@@ -145,7 +146,7 @@ def install_irods_repository():
         'Ubuntu': install_irods_repository_apt,
         'Centos': install_irods_repository_yum,
         'Centos linux': install_irods_repository_yum,
-        'Opensuse ': install_irods_repository_zypper,
+        'Opensuse leap': install_irods_repository_zypper,
     }
 
     try:
@@ -164,18 +165,18 @@ def install_os_packages_yum(packages):
     subprocess_get_output(args, check_rc=True)
 
 def install_os_packages_zypper(packages):
-    args = ['sudo', 'zypper', '--non-interactive', 'install'] + list(packages)
+    args = ['sudo', 'zypper', '--no-gpg-checks', '--non-interactive', 'install'] + list(packages)
     subprocess_get_output(args, check_rc=True)
 
-def install_os_packages(packages):
+def install_os_packages(packages, distribution):
     dispatch_map = {
         'Ubuntu': install_os_packages_apt,
         'Centos': install_os_packages_yum,
         'Centos linux': install_os_packages_yum,
-        'Opensuse ': install_os_packages_zypper,
+        'Opensuse leap': install_os_packages_zypper,
     }
     try:
-        dispatch_map[get_distribution()](packages)
+        dispatch_map[distribution](packages)
     except KeyError:
         raise_not_implemented_for_distribution()
 
@@ -192,17 +193,18 @@ def install_os_packages_from_files_yum(files):
     subprocess_get_output(args, check_rc=True)
 
 def install_os_packages_from_files_zypper(files):
-    install_os_packages_zypper(files)
+    args = ['sudo', 'zypper', '--no-gpg-checks', '--non-interactive', 'install'] + list(files)
+    subprocess_get_output(args, check_rc=True)
 
-def install_os_packages_from_files(files):
+def install_os_packages_from_files(files, distribution):
     dispatch_map = {
         'Ubuntu': install_os_packages_from_files_apt,
         'Centos': install_os_packages_from_files_yum,
         'Centos linux': install_os_packages_from_files_yum,
-        'Opensuse ': install_os_packages_from_files_zypper,
+        'Opensuse leap': install_os_packages_from_files_zypper,
     }
     try:
-        dispatch_map[get_distribution()](files)
+        dispatch_map[distribution](files)
     except KeyError:
         raise_not_implemented_for_distribution()
 
@@ -210,7 +212,7 @@ def get_munge_external():
     munge_external = 'irods-externals-mungefs*'
     return munge_external
 
-def install_irods_packages(database_type, database_machine, install_externals, irods_packages_directory, externals_directory=None, upgrade=False, is_provider=False):
+def install_irods_packages(database_type, database_machine, install_externals, irods_packages_directory, externals_directory=None, distribution=None, upgrade=False, is_provider=False):
     setup_database_client = 'python setup_database_client.py --database_type {0}'.format(database_type)
     if not upgrade and is_provider:
         subprocess.check_call(setup_database_client, shell=True)
@@ -223,19 +225,19 @@ def install_irods_packages(database_type, database_machine, install_externals, i
         if 'irods-server' in icat_package_basename:
             server_package = os.path.join(irods_packages_directory, icat_package_basename)
             if install_externals:
-                externals_list = get_package_dependencies(server_package)
+                externals_list = get_package_dependencies(server_package, distribution)
                 externals_list = externals_list + ',' + get_munge_external()
                 install_externals_from_list(externals_list, externals_directory)
             else:
                 install_irods_repository()
                 munge_external = get_munge_external()
-                install_os_packages([munge_external])
+                install_os_packages([munge_external], distribution)
                 #need to install munge here too after munge in core dev
 
             runtime_package = server_package.replace('irods-server', 'irods-runtime')
             icommands_package = server_package.replace('irods-server', 'irods-icommands')
             database_plugin = get_database_plugin(irods_packages_directory, database_type)
-            install_os_packages([runtime_package, icommands_package, server_package, database_plugin])
+            install_os_packages([runtime_package, icommands_package, server_package, database_plugin], distribution)
         else:
             raise RuntimeError('unhandled package name')
 
@@ -290,11 +292,11 @@ def setup_irods(database_type, zone_name='tempZone', database_machine=None):
             print(database_type, ' not supported')
             return
 
-def upgrade(upgrade_packages_directory, database_type, database_machine, install_externals, externals_directory=None, is_provider=True):
+def upgrade(upgrade_packages_directory, database_type, database_machine, install_externals, externals_directory=None, distribution=None, is_provider=True):
     initial_version = get_irods_version()
     stop_server(initial_version)
     #upgrade packages
-    install_irods_packages(database_type, database_machine, install_externals, upgrade_packages_directory, externals_directory, upgrade = True, is_provider = is_provider)
+    install_irods_packages(database_type, database_machine, install_externals, upgrade_packages_directory, externals_directory, distribution, upgrade = True, is_provider = is_provider)
     final_version = get_irods_version()
     upgrade_core_re(initial_version, final_version)
     stop_server(final_version)

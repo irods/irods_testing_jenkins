@@ -90,14 +90,17 @@ def configure_client_yum(database):
         install_oracle_client()
 
 def configure_client_zypper(database):
-    print("not yet implemented")
+    if database == 'postgres':
+        irods_python_ci_utilities.install_os_packages(['psqlODBC', 'unixODBC', 'unixODBC-devel'])
+    else:
+        print(database, ' not implemented')
 
 def configure_client(database):
     dispatch_map = {
         'Ubuntu': configure_client_apt,
         'Centos': configure_client_yum,
         'Centos linux': configure_client_yum,
-        'Opensuse': configure_client_zypper,
+        'Opensuse leap': configure_client_zypper,
     }
 
     try:

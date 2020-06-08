@@ -24,6 +24,9 @@ def get_externals_directory():
 def get_mungefs_directory():
     return os.path.join('/', 'opt','irods-externals','mungefs1.0.3-0','usr','bin')
 
+def get_distribution():
+    return irods_python_ci_utilities.get_distribution()
+
 def setup_irods(database_type, database_machine):
     if database_type == 'postgres':
         subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < /var/lib/irods/packaging/localhost_setup_postgres.input'], shell=True)
@@ -125,11 +128,11 @@ def main():
 
     args = parser.parse_args()
 
-    ci_utilities.install_irods_packages(args.database_type, args.database_machine, args.install_externals, get_irods_packages_directory(), get_externals_directory(), is_provider=True)
+    ci_utilities.install_irods_packages(args.database_type, args.database_machine, args.install_externals, get_irods_packages_directory(), get_externals_directory(), get_distribution(), is_provider=True)
     ci_utilities.setup_irods(args.database_type, 'tempZone', args.database_machine)
 
     if args.upgrade_test:
-        ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory())
+        ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory(), get_distribution())
     
     if args.unit_test:
         sys.exit(run_unit_test(args.test_name))

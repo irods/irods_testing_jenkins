@@ -49,7 +49,7 @@ def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
         database_container = cmd_line_args.test_name_prefix + '_' + test + '_' + cmd_line_args.database_type + '-database'
         network_name = cmd_line_args.test_name_prefix + '_' + cmd_line_args.database_type + '_' + test
 
-        if 'centos' in cmd_line_args.image_name:
+        if 'centos' in cmd_line_args.image_name or 'suse' in cmd_line_args.image_name:
             centosCmdBuilder = DockerCommandsBuilder()
             centosCmdBuilder.core_constructor(container_name, build_mount, upgrade_mount, results_mount, None, externals_mount, None, cmd_line_args.image_name, 'install_and_test.py', cmd_line_args.database_type, test, test_type, is_unit_test, True, database_container)
             run_cmd = centosCmdBuilder.build_run_cmd()

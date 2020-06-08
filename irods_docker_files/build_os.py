@@ -11,6 +11,8 @@ def build_os_containers(platform_target, build_id):
     dockerfile = 'Dockerfile.ubuntu'
     if 'centos' in platform_target:
         dockerfile = 'Dockerfile.centos'
+    if 'opensuse' in platform_target:
+        dockerfile = 'Dockerfile.suse'
 
     build_tag = platform_target+':'+build_id
     docker_cmd = ['docker build -t {0} --build-arg base_image={1} -f {2} .'.format(build_tag, base_os, dockerfile)] 
