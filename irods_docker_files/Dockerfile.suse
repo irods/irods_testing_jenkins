@@ -1,0 +1,33 @@
+ARG base_image=opensuse/leap:latest
+FROM $base_image
+
+RUN zypper --non-interactive update && \
+    zypper --non-interactive in python python-psutil python-requests python-jsonschema && \
+    zypper --non-interactive in wget lsb-release sudo make vim rpm-build zip netcat && \
+    zypper --non-interactive in python-pip git net-tools iputils && \
+    pip install pygithub==1.45 && \
+    pip install distro
+
+RUN zypper clean &&\
+    zypper --non-interactive update &&\
+    zypper --non-interactive in libfuse2 lsof rsyslog vim fuse fuse-devel curl tar gzip
+
+RUN cd /tmp && git clone https://github.com/jassigill2000/irods_python_ci_utilities && \
+    cd irods_python_ci_utilities && git checkout dockerize && python setup.py install
+
+ENV IRODS_BUILD_DIRECTORY=/irods_build
+ENV IRODS_TEST_RESULTS=/irods_test_env
+
+RUN mkdir -p $IRODS_BUILD_DIRECTORY &&\
+    chmod -R 775 $IRODS_BUILD_DIRECTORY 
+
+RUN mkdir -p $IRODS_TEST_RESULTS &&\
+    chmod -R 775 $IRODS_TEST_RESULTS
+
+RUN zypper install -y dbus-1 systemd-sysvinit
+RUN cp /usr/lib/systemd/system/dbus.service /etc/systemd/system/; \    
+    sed -i 's/OOMScoreAdjust=-900//' /etc/systemd/system/dbus.service
+
+VOLUME ["/sys/fs/cgroup"]
+
+CMD ["/sbin/init"]
