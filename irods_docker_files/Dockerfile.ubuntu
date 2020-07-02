@@ -26,8 +26,8 @@ RUN python -m easy_install --upgrade pyOpenSSL
 RUN python -m easy_install --upgrade cryptography
 RUN apt-get update
 
-RUN cd /tmp && git clone https://github.com/irods/irods_python_ci_utilities && \
-    cd irods_python_ci_utilities && python setup.py install 
+RUN cd /tmp && git clone https://github.com/jassigill2000/irods_python_ci_utilities && \
+    cd irods_python_ci_utilities && git checkout dockerize && python setup.py install 
 
 ENV IRODS_BUILD_DIRECTORY=/irods_build
 ENV IRODS_TEST_RESULTS=/irods_test_env
@@ -43,5 +43,8 @@ RUN DEBIAN_FRONTEND=noninteractive &&\
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata &&\
     ln -fs /usr/share/zoneinfo/US/Eastern /etc/localtime &&\
     dpkg-reconfigure --frontend noninteractive tzdata
+
+RUN adduser irodsbuild && \
+    echo "user ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/user
 
 RUN echo exit 0 > /usr/sbin/policy-rc.d

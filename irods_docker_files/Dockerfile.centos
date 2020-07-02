@@ -59,3 +59,5 @@ RUN mkdir -p $IRODS_BUILD_DIRECTORY &&\
 RUN mkdir -p $IRODS_TEST_RESULTS &&\
     chmod -R 775 $IRODS_TEST_RESULTS
 
+RUN adduser irodsbuild && \
+    echo "user ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/user
