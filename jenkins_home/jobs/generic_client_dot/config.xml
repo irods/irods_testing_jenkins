@@ -1,0 +1,89 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.40">
+  <actions/>
+  <description>python client test suite</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.31">
+      <autoRebuild>false</autoRebuild>
+      <rebuildDisabled>false</rebuildDisabled>
+    </com.sonyericsson.rebuild.RebuildSettings>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_REMOTE_REPO</name>
+          <description>Remote Repo, Source for clone</description>
+          <defaultValue>https://github.com/d-w-moore/python-irodsclient</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_LOCAL_REPO_PREFIX</name>
+          <description>Remote Repo, Destination for clone.   Job name and build number are later appended to arrive at a unique name.</description>
+          <defaultValue>prc_test</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PARAMETER_COMMITISH</name>
+          <description>SHA or branch name</description>
+          <defaultValue></defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>SETTING_OUTPUT_DIRECTORY</name>
+          <description>Where (on the host) to put the output result</description>
+          <defaultValue></defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.TextParameterDefinition>
+          <name>CONFIG_JSON</name>
+          <description>JSON formatted client-dot configuration overrides</description>
+          <defaultValue>{ 
+  &quot;yaml_substitutions&quot;: {
+                &quot;irods_pkg_dir&quot;:&quot;&lt;INSERT_HOST_PATH_HERE&gt;&quot;
+    },
+    &quot;container_environments&quot;: {
+    },
+    &quot;project_down_when_client_exits&quot;: false
+}</defaultValue>
+          <trim>false</trim>
+        </hudson.model.TextParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.89">
+    <script>def mysh(script) { sh &quot;#!/bin/bash -e\n&quot; + script }
+node {
+     def build_id = env.BUILD_ID
+     def output_directory = env.JENKINS_OUTPUT + &apos;/&apos; + env.JOB_NAME
+     def dockerfile_dir = env.GLOBAL_PARAMETER_DOCKER_REPO
+     print(dockerfile_dir)
+     dir(dockerfile_dir) {
+         stage(&apos;iRODS Plugin Build&apos;) {
+             def parallelBranches = [:]
+             for(int i = 0; i &lt; 1; i++) {
+                def local_repo = PARAMETER_LOCAL_REPO_PREFIX +&apos;__&apos;+ env.JOB_NAME +&apos;__&apos;+ env.BUILD_NUMBER
+                def build_cmd = &apos;python3 -u docker_compose_CI_with_client.py &apos; +
+                                &apos; --remote_repo=&apos; + PARAMETER_REMOTE_REPO  +
+                                &apos; --local_repo=&apos;  + local_repo +
+                                &apos; --commitish=&apos; + PARAMETER_COMMITISH +
+                                &quot; --json_config=&apos;&quot; + CONFIG_JSON + &quot;&apos;&quot;
+                def branchName = &apos;NoBranch&apos;
+                def echo_json = &quot;echo &apos;&quot; + CONFIG_JSON + &quot;&apos;&quot;
+                parallelBranches[&quot;${branchName}&quot;] = {
+                   sh build_cmd
+                  //  mysh echo_json
+                    //mysh (&quot;echo good-bye----- | tee &gt;(tr a-z A-Z &gt;/tmp/stuff.\$\$) | cat &gt;&amp;2&quot;)
+              
+                }
+             }
+             if (parallelBranches.size() != 0) {
+                 parallel(parallelBranches)
+             }
+         }
+     }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
