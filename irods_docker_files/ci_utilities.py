@@ -300,6 +300,12 @@ def upgrade(upgrade_packages_directory, database_type, database_machine, install
     stop_server(final_version)
     start_server(final_version)
 
+def start_server(irods_version):
+    if irods_version <= (4,1):
+        subprocess_get_output(['su', '-', 'irods', '-c', '/var/lib/irods/iRODS/irodsctl start'], check_rc=True)
+    else:
+        subprocess_get_output(['su', '-', 'irods', '-c', '/var/lib/irods/irodsctl start'], check_rc=True)
+
 def stop_server(irods_version):
     if irods_version <= (4,1):
         subprocess_get_output(['su', '-', 'irods', '-c', '/var/lib/irods/iRODS/irodsctl stop'], check_rc=True)

@@ -127,6 +127,7 @@ def main():
 
     ci_utilities.install_irods_packages(args.database_type, args.database_machine, args.install_externals, get_irods_packages_directory(), get_externals_directory(), is_provider=True)
     ci_utilities.setup_irods(args.database_type, 'tempZone', args.database_machine)
+    ci_utilities.start_server(ci_utilities.get_irods_version())
 
     if args.upgrade_test:
         ci_utilities.upgrade(get_upgrade_packages_directory(), args.database_type, args.install_externals, get_externals_directory())
