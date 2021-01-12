@@ -334,12 +334,6 @@ acDeleteCollByAdminIfPresent(*parColl,*childColl) {
             subprocess_get_output(['sudo', 'su', '-', '-c', 'mv /etc/irods/core.re.updated /etc/irods/core.re'], check_rc=True)
             subprocess_get_output(['sudo', 'chown', 'irods:irods', '/etc/irods/core.re'], check_rc=True)
 
-def start_server(irods_version):
-    if irods_version <= (4,1):
-        subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', '/var/lib/irods/iRODS/irodsctl start'], check_rc=True)
-    else:
-        subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', '/var/lib/irods/irodsctl start'], check_rc=True)
-
 def subprocess_get_output(*args, **kwargs):
     kwargs['stdout'] = subprocess.PIPE
     kwargs['stderr'] = subprocess.PIPE
