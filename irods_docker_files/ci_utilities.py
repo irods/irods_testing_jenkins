@@ -249,17 +249,27 @@ def get_database_plugin(irods_packages_directory, database_type):
     return database_plugin
 
 def change_setup_file(database_type, alias_name, input_file):
-    file_content =  open(input_file).read()
-    file_content = file_content.replace('localhost', alias_name)
+    with open(input_file) as f:
+        data = f.read()
+
+    data = data.replace('localhost', alias_name)
     if database_type == 'oracle':
-        file_content = file_content.replace('ICAT', 'XE')
-    new_content = open(input_file, 'w')
-    new_content.write(file_content)
-    new_content.close()
+        data = data.replace('ICAT', 'XE')
+
+    with open(input_file, 'w') as f:
+        f.write(data)
 
 def run_setup_script(export_str, input_file):
     if export_str is None:
-        subprocess.check_call(['python /var/lib/irods/scripts/setup_irods.py < {0}'.format(input_file)], shell=True)
+        ec, out, err = subprocess_get_output(['python /var/lib/irods/scripts/setup_irods.py < {0}'.format(input_file)], shell=True)
+        print('''
+SETUP SCRIPT OUTPUT:
+    ERROR CODE = {0}
+    STDOUT     = {1}
+    STDERR     = {2}
+'''.format(ec, out, err))
+        if ec != 0:
+            raise RuntimeError('Failed to configure iRODS.')
     else:
         subprocess.check_call(['{0} python /var/lib/irods/scripts/setup_irods.py < {1}'.format(export_str, input_file)], shell=True)
 

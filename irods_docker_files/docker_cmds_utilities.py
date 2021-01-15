@@ -7,6 +7,7 @@ import os
 import subprocess
 from subprocess import Popen, PIPE
 
+import ci_utilities
 
 def get_docker_cmd(run_cmd, exec_cmd, stop_cmd, container_name, alias_name, database_container, database_type, network_name, extra_args=None):
     docker_cmd = {'run_cmd': run_cmd,
@@ -24,8 +25,16 @@ def get_docker_cmd(run_cmd, exec_cmd, stop_cmd, container_name, alias_name, data
     return docker_cmd
 
 def build_irods_zone(build_tag, base_image, database_type, dockerfile='Dockerfile.install_and_test', install_database=True):
-    docker_cmd =  ['docker build -t {0} --build-arg base_image={1} -f {2} .'.format(build_tag, base_image, dockerfile)]
-    run_build = subprocess.check_call(docker_cmd, shell = True)
+    docker_cmd =  ['docker', 'build', '-t', build_tag, '--build-arg', 'base_image={0}'.format(base_image), '-f', dockerfile, '--no-cache', '.']
+    ec, out, err = ci_utilities.subprocess_get_output(docker_cmd)
+    print('''
+DOCKER BUILD OUTPUT FOR "{0}":
+    ERROR CODE = {1}
+    STDOUT     = {2}
+    STDERR     = {3}
+'''.format(docker_cmd, ec, out, err))
+    if ec != 0:
+        raise RuntimeError('"{0}" failed.'.format(docker_cmd))
     if install_database:
         import configuration
         database_image = configuration.database_dict[database_type]
@@ -41,34 +50,32 @@ def build_irods_zone(build_tag, base_image, database_type, dockerfile='Dockerfil
 
 def create_network(network_name):
     check_network = Popen(['docker', 'network', 'ls'], stdout=PIPE, stderr=PIPE)
-    _out, _err = check_network.communicate()
-    if not network_name in _out:
+    out, _ = check_network.communicate()
+    if not network_name in out:
         docker_cmd = ['docker', 'network', 'create', '--attachable', network_name]
         network = subprocess.check_call(docker_cmd)
 
 def connect_to_network(machine_name, alias_name, network_name):
-    network_cmd = ['docker', 'network', 'connect', '--alias', alias_name, network_name, machine_name]
-    proc = Popen(network_cmd, stdout=PIPE, stderr=PIPE)
-    _out, _err = proc.communicate()
+    subprocess.check_call(['docker', 'network', 'connect', '--alias', alias_name, network_name, machine_name])
 
 def delete_network(network_name):
     while True:
-        rm_network = Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE)
-        _nout, _nerr = rm_network.communicate()
-        if 'error' not in _nerr:
+        p = Popen(['docker', 'network', 'rm', network_name], stdout=PIPE, stderr=PIPE)
+        _, err = p.communicate()
+        if 'error' not in err:
             break
         time.sleep(1)
 
 def is_container_running(container_name):
-    _running = False
+    running = False
     state_cmd = ['docker', 'inspect', '-f', '{{.State.Running}}', container_name]
-    while not _running:
-        state_proc = Popen(state_cmd, stdout=PIPE, stderr=PIPE)
-        _sout, _serr = state_proc.communicate()
-        if 'true' in _sout:
-            _running = True
+    while not running:
+        p = Popen(state_cmd, stdout=PIPE, stderr=PIPE)
+        out, _ = p.communicate()
+        if 'true' in out:
+            running = True
         time.sleep(1)
-    return _running
+    return running
 
 def check_container_health(container_name):
     while True:
@@ -139,7 +146,6 @@ def run_database(database_type, database_container, alias_name, network_name):
         run_cmd = ['docker', 'run', '-d', '--rm',  '--name', database_container, '-h', database_alias, '--shm-size=1g', '-e', 'ORACLE_PWD=testpassword', database_image]
         print('database_run_cmd --> ', run_cmd)
     else:
-
         run_cmd = ['docker', 'run', '-d', '--rm',  '--name', database_container]
         if database_type == 'postgres':
             database_alias = 'postgres.example.org'
@@ -155,56 +161,79 @@ def run_database(database_type, database_container, alias_name, network_name):
         run_cmd.extend(['-e', passwd_env_var, '-h', database_alias, database_image])
         print('database_run_cmd --> ', run_cmd)
 
-    run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
-    _out, _err = run_proc.communicate()
-    _running = is_container_running(database_container)
-    if _running:
+    Popen(run_cmd, stdout=PIPE, stderr=PIPE).communicate()
+    if is_container_running(database_container):
         connect_to_network(database_container, database_alias, network_name)
 
+def execute_shell_command(_cmd, _log):
+    _log.write('Executing command: {0}\n'.format(_cmd))
+
+    p = Popen(_cmd, stdout=PIPE, stderr=PIPE)
+    out, err = p.communicate()
+
+    _log.write('Error Code: {0}\n'.format(str(p.returncode)))
+    if out: _log.write(out)
+    if err: _log.write(err)
+
+    _log.write('\n')
+
+    return p.returncode
+
 def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias_name, database_container, database_type, network_name, **kwargs):
-    # the docker run command (stand up a container)
-    run_proc = Popen(run_cmd, stdout=PIPE, stderr=PIPE)
-    _out, _err = run_proc.communicate()
-    if database_container is not None:
-        if 'test_type' in kwargs:
-            if kwargs['test_type'] == 'standalone_icat':
-                create_network(network_name)
-                run_database(database_type, database_container, alias_name, network_name)
-            if 'topology' in kwargs['test_type'] and 'machine_list' in kwargs and kwargs['use_ssl'] is True and alias_name == 'icat.example.org':
-                install_ssl_files(kwargs['machine_list'])
+    with open(kwargs['log_path'], 'w') as job_log:
+        # Launch container for test.
+        ec = execute_shell_command(run_cmd, job_log)
+        if ec != 0:
+           return ec
 
-        if is_container_running(irods_container):
-            connect_to_network(irods_container, alias_name, network_name)
+        if database_container is not None:
+            if 'test_type' in kwargs:
+                if kwargs['test_type'] == 'standalone_icat':
+                    create_network(network_name)
+                    run_database(database_type, database_container, alias_name, network_name)
 
-        if not 'resource' in alias_name:
-            if is_container_running(database_container):
-                if database_type == 'oracle':
-                    check_container_health(database_container)
-                else:
-                    setup_database = 'python setup_database.py --database_type {0} --database_machine {1} --provider_machine {2} --network_name {3}'.format(database_type, database_container, irods_container, network_name)
-                    subprocess.check_call(setup_database, shell=True)
+                if 'topology' in kwargs['test_type'] and 'machine_list' in kwargs and kwargs['use_ssl'] is True and alias_name == 'icat.example.org':
+                    install_ssl_files(kwargs['machine_list'])
 
-    # execute a command in the running container
-    exec_proc = Popen(exec_cmd, stdout=PIPE, stderr=PIPE)
-    _eout, _eerr = exec_proc.communicate()
-    _exec_rc = exec_proc.returncode
-    if _exec_rc == 0 and 'otherZone' in alias_name:
-        federation_args = create_federation_args(kwargs['remote_zone'])
-        test_type = kwargs['test_type']
-        test_name = kwargs['test_name']
+            if is_container_running(irods_container):
+                connect_to_network(irods_container, alias_name, network_name)
 
-        run_test_cmd = ['docker', 'exec', irods_container, 'python', 'run_tests_in_zone.py', '--test_type', test_type, '--database_type', database_type, '--specific_test', test_name, '--federation_args', federation_args]
-        run_test_proc = Popen(run_test_cmd, stdout=PIPE, stderr=PIPE)
-        _eout, _eerr = run_test_proc.communicate()
-        _exec_rc = run_test_proc.returncode
+            if not 'resource' in alias_name:
+                if is_container_running(database_container):
+                    if database_type == 'oracle':
+                        check_container_health(database_container)
+                    else:
+                        setup_database = 'python setup_database.py --database_type {0} --database_machine {1} --provider_machine {2} --network_name {3}'.format(database_type, database_container, irods_container, network_name)
+                        subprocess.check_call(setup_database, shell=True)
 
-    # stop the container
-    print('stopping container [' + irods_container + ']')
-    Popen(stop_cmd).wait()
-    if database_container is not None:
-        if not 'resource' in alias_name:
-            database_stop = ['docker', 'stop', database_container]
-            Popen(database_stop).wait()
-            delete_network(network_name)
+        # Execute a command in the running container
+        ec = execute_shell_command(exec_cmd, job_log)
+        if ec != 0:
+            return ec
 
-    return _exec_rc
+        # Launch federation test.
+        if ec == 0 and 'otherZone' in alias_name:
+            federation_args = create_federation_args(kwargs['remote_zone'])
+            test_type = kwargs['test_type']
+            test_name = kwargs['test_name']
+
+            run_test_cmd = ['docker', 'exec', irods_container, 'python', 'run_tests_in_zone.py', '--test_type', test_type,
+                            '--database_type', database_type, '--specific_test', test_name, '--federation_args', federation_args]
+            ec = execute_shell_command(run_test_cmd, job_log)
+            if ec != 0:
+                execute_shell_command(stop_cmd, job_log)
+                return ec
+
+        # Stop the container
+        job_log.write('Stopping container [' + irods_container + '] ...\n')
+        ec = execute_shell_command(stop_cmd, job_log)
+        if ec != 0:
+            return ec
+
+        if database_container is not None:
+            if not 'resource' in alias_name:
+                execute_shell_command(['docker', 'stop', database_container], job_log)
+                delete_network(network_name)
+
+        return 0
+

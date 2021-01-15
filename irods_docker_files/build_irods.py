@@ -10,9 +10,22 @@ from subprocess import Popen, PIPE
 def build_irods(output_directory, icommands_git_repo, icommands_sha, externals_build_dir):
     build_hook = '/irods_git_repo/irods_consortium_continuous_integration_build_hook.py'
     if os.path.exists(build_hook):
-        build_cmd = ['python2 {build_hook} --icommands_git_repository {icommands_git_repo} --icommands_git_commitish {icommands_sha} --externals_packages_directory {externals_build_dir} --output_root_directory {output_directory}'.format(**locals())]
+        build_cmd = ['python2', build_hook,
+                     '--icommands_git_repository', icommands_git_repo,
+                     '--icommands_git_commitish', icommands_sha,
+                     '--externals_packages_directory', str(externals_build_dir),
+                     '--output_root_directory', output_directory]
         print('build_cmd ---> ', build_cmd)
-        build_p = subprocess.check_call(build_cmd, shell=True)
+        p = Popen(build_cmd, stdout=PIPE)
+        out, err = p.communicate()
+        print('''
+IRODS BUILD OUTPUT:
+    ERROR CODE = {0}
+    STDOUT     = {1}
+    STDERR     = {2}
+'''.format(p.returncode, out, err))
+        if p.returncode != 0:
+            raise RuntimeError('Failed to build iRODS.')
 
 def main():
     parser = argparse.ArgumentParser(description='build plugins in os-containers')

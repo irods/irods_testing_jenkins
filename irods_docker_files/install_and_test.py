@@ -87,9 +87,11 @@ def run_test(test_name, database_type):
         test_output_file = '/var/lib/irods/log/test_output.log'
 
         if database_type == 'oracle':
-            rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'cd scripts; export PATH={0}:$PATH; python2 run_tests.py --xml_output --run_s={1} 2>&1 | tee {2}; exit $PIPESTATUS'.format(get_mungefs_directory(), test_name, test_output_file)])
+            cmd = 'cd scripts; export PATH={0}:$PATH; python2 run_tests.py --xml_output --run_s={1} 2>&1 | tee {2}; exit $PIPESTATUS'.format(get_mungefs_directory(), test_name, test_output_file)
+            rc, _, _ = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', cmd])
         else:
-            rc, stdout, stderr = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', 'cd scripts; export PATH={0}:$PATH; python2 run_tests.py --use_mungefs --xml_output --run_s={1} 2>&1 | tee {2}; exit $PIPESTATUS'.format(get_mungefs_directory(), test_name, test_output_file)])
+            cmd = 'cd scripts; export PATH={0}:$PATH; python2 run_tests.py --use_mungefs --xml_output --run_s={1} 2>&1 | tee {2}; exit $PIPESTATUS'.format(get_mungefs_directory(), test_name, test_output_file)
+            rc, _, _ = irods_python_ci_utilities.subprocess_get_output(['sudo', 'su', '-', 'irods', '-c', cmd])
         return rc
     finally:
         output_directory = '/irods_test_env/{0}/{1}/{2}'.format(irods_python_ci_utilities.get_irods_platform_string(), database_type, test_name)
@@ -135,8 +137,7 @@ def main():
     if args.unit_test:
         sys.exit(run_unit_test(args.test_name))
     elif not args.test_plugin:    
-        rc = run_test(args.test_name, args.database_type)
-        sys.exit(rc)
+        sys.exit(run_test(args.test_name, args.database_type))
     else:
         rc, stdout, stderr = checkout_git_repo_and_run_test_hook(args.plugin_repo, args.plugin_commitish, args.passthrough_arguments, args.install_externals, args.database_type)
         sys.exit(rc)
