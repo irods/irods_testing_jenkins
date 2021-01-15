@@ -31,5 +31,4 @@ COPY config/add-global-environment-variables.groovy /usr/share/jenkins/ref/init.
 COPY config/plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN /usr/local/bin/install-plugins.sh < /usr/share/jenkins/ref/plugins.txt
 
-
 VOLUME ["/var/jenkins_home", "/var/run/docker.sock", "/irods_docker_files", "/jenkins_output"]

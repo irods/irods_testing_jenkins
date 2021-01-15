@@ -4,16 +4,19 @@ from __future__ import print_function
 from subprocess import Popen, PIPE
 from multiprocessing import Pool
 from urlparse import urlparse
-from docker_cmd_builder import DockerCommandsBuilder
 
 import argparse
-import ci_utilities
-import docker_cmds_utilities
 import json
 import os
 import requests
 import subprocess
 import sys
+
+from docker_cmd_builder import DockerCommandsBuilder
+
+import ci_utilities
+import docker_cmds_utilities
+import irods_python_ci_utilities
 
 def download_list_of_tests(irods_repo, irods_sha, relative_path):
     url = urlparse(irods_repo)
@@ -36,7 +39,7 @@ def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
     else:
         upgrade_packages_dir = cmd_line_args.upgrade_packages_dir
     upgrade_mount = upgrade_packages_dir + ':/upgrade_dir'
-    results_mount = cmd_line_args.jenkins_output + ':/irods_test_env'
+    results_mount = cmd_line_args.jenkins_output + ':/irods_test_env' # /path/to/output/directory/build_number:/irods_test_env
     run_mount = '/tmp/$(mktemp -d):/run'
     externals_mount = cmd_line_args.externals_dir + ':/irods_externals'
     mysql_mount = '/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz:/projects/irods/vsphere-testing/externals/mysql-connector-odbc-5.3.7-linux-ubuntu16.04-x86-64bit.tar.gz'
@@ -71,6 +74,30 @@ def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
 
     return docker_cmds_list
 
+def to_os_name(docker_image_name):
+    name = docker_image_name.lower()
+    if 'ubuntu_16' in name: return 'Ubuntu_16'
+    if 'ubuntu_18' in name: return 'Ubuntu_18'
+    if 'ubuntu_20' in name: return 'Ubuntu_20'
+    if 'centos_7' in name : return 'Centos_7'
+    raise RuntimeError('No OS name defined for [{0}].'.format(docker_image_name))
+
+def to_database_name(docker_image_name):
+    name = docker_image_name.lower()
+    if 'postgres' in name: return 'postgres'
+    if 'mysql' in name: return 'mysql'
+    if 'oracle' in name: return 'oracle'
+    if 'mariadb' in name : return 'mariadb'
+    raise RuntimeError('No database name defined for [{0}].'.format(docker_image_name))
+
+def generate_job_output_directory_path(jenkins_output_path, docker_image_name):
+    path_elements = jenkins_output_path.split(os.sep)
+    job_number_index = path_elements.index('run_irods_tests') + 1
+    return os.path.join('/jenkins_output/run_irods_tests',
+                        path_elements[job_number_index],
+                        to_os_name(docker_image_name),
+                        to_database_name(docker_image_name))
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--image_name', default='ubuntu_16:latest', help='base image name', required=True)
@@ -103,25 +130,57 @@ def main():
 
     docker_cmds_list.extend(to_docker_commands(test_list, args))
 
-    print(docker_cmds_list)
-
     run_pool = Pool(processes=int(args.test_parallelism))
+    job_output_dir = generate_job_output_directory_path(args.jenkins_output, args.image_name)
 
-    containers = [{'test_name': docker_cmd['test_name'], 'proc': run_pool.apply_async(docker_cmds_utilities.run_command_in_container, (docker_cmd['run_cmd'], docker_cmd['exec_cmd'], docker_cmd['stop_cmd'], docker_cmd['container_name'], docker_cmd['alias_name'], docker_cmd['database_container'], docker_cmd['database_type'], docker_cmd['network_name'],),{'test_type': docker_cmd['test_type'],})} for docker_cmd in docker_cmds_list]
+    try:
+        os.makedirs(job_output_dir)
+    except:
+        pass
 
-    container_error_codes = [{'test_name': c['test_name'], 'error_code': c['proc'].get()} for c in containers]
+    sys.stdout.flush()
 
-    print(container_error_codes)
+    containers = [{
+        'test_name': docker_cmd['test_name'],
+        'proc': run_pool.apply_async(
+            # The operation to run asynchronously.
+            docker_cmds_utilities.run_command_in_container,
+            # The arguments to the operation.
+            (
+                docker_cmd['run_cmd'],
+                docker_cmd['exec_cmd'],
+                docker_cmd['stop_cmd'],
+                docker_cmd['container_name'],
+                docker_cmd['alias_name'],
+                docker_cmd['database_container'],
+                docker_cmd['database_type'],
+                docker_cmd['network_name'],
+            ),
+            # The dictionary that maps to **kwargs within the operation. This will be appended
+            # to the end of the arguments to the operation (e.g. operation(*tuple_args, **kwargs)).
+            {
+                'test_type': docker_cmd['test_type'],
+
+                # The path of the file that will hold the execution results of docker commands and other
+                # information relating to the test. For example, the file will contain things such as the
+                # output of the iRODS setup script.
+                'log_path': os.path.join(job_output_dir, docker_cmd['test_name'], 'job_' + docker_cmd['test_name'] + '.log')
+            }
+        )
+    } for docker_cmd in docker_cmds_list]
+
+    container_results = [{'test_name': c['test_name'], 'error_code': c['proc'].get()} for c in containers]
 
     failures = []
-    for ec in container_error_codes:
-        if ec['error_code'] != 0:
-            failures.append(ec['test_name'])
+    for r in container_results:
+        if r['error_code'] != 0:
+            failures.append(r['test_name'])
 
     if len(failures) > 0:
-        print('Failing Tests:')
-        for test_name in failures:
-            print('\t{0}'.format(test_name))
+        print('\nFAILING TESTS:')
+        for f in failures:
+            print('\t' + f)
+        print('\nSee {0}/job_<test_name>.log for details.'.format(job_output_dir))
         sys.exit(1)
 
 if __name__ == '__main__':

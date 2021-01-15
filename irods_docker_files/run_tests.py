@@ -12,7 +12,6 @@ import docker_cmds_utilities
 from subprocess import Popen, PIPE
 from docker_cmd_builder import DockerCommandsBuilder
 
-
 def get_test_name_prefix(base_os, prefix):
     test_name_prefix = base_os + '-' + prefix
 
@@ -36,8 +35,8 @@ def run_tests(image_name, irods_sha, test_name_prefix, cmd_line_args, skip_unit_
     run_tests_cmd_list = ['python', 'run_tests_in_parallel.py']
     for option in options:
         run_tests_cmd_list.extend(option)
-    print(run_tests_cmd_list)
-    run_tests_p = subprocess.check_call(run_tests_cmd_list)
+
+    subprocess.check_call(run_tests_cmd_list)
 
 def run_plugin_tests(image_name, plugin_sha, machine_name, plugin_name, test_name_prefix, cmd_line_args):
     build_mount = cmd_line_args.irods_build_dir + ':/irods_build'
