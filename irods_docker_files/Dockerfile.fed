@@ -2,7 +2,7 @@ ARG base_image=ubuntu:16.04
 
 FROM $base_image
 
-RUN pip install xmlrunner
+RUN pip install xmlrunner PyJWT
 
 ARG arg_jenkins_ouput=/worm_hole_missing
 ENV JENKINS_OUTPUT=${arg_jenkins_output}
