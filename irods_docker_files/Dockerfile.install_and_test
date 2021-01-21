@@ -7,7 +7,7 @@ ENV DATABASE=$database_type
 ARG arg_jenkins_ouput=/worm_hole_missing
 ENV JENKINS_OUTPUT=${arg_jenkins_output}
 
-RUN pip install xmlrunner
+RUN pip install xmlrunner PyJWT
 
 ADD setup_database_client.py /
 RUN chmod u+x /setup_database_client.py
@@ -23,5 +23,5 @@ RUN chmod 644 /etc/profile.d/irods.sh
 ADD install_and_test.py /
 RUN chmod u+x /install_and_test.py
 
-VOLUME [ "/sys/fs/cgroup" ]
+VOLUME ["/sys/fs/cgroup"]
 CMD ["/sbin/init"]
