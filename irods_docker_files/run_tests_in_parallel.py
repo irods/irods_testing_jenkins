@@ -68,7 +68,14 @@ def to_docker_commands(test_list, cmd_line_args, is_unit_test=False):
         else:
             print('OS not supported')
 
-        extra_args = {'test_name': test, 'test_type': test_type}
+        # This dictionary can be used to pass/expose additional arguments to the apply_async() call.
+        # The arguments passed will be specific to the test.
+        extra_args = {
+            'test_name': test,
+            'test_type': test_type,
+            'is_unit_test': is_unit_test
+        }
+
         docker_cmd = docker_cmds_utilities.get_docker_cmd(run_cmd, exec_cmd, stop_cmd, container_name, alias_name, database_container, cmd_line_args.database_type, network_name, extra_args)
         docker_cmds_list.append(docker_cmd)
 
@@ -95,8 +102,20 @@ def generate_job_output_directory_path(jenkins_output_path, docker_image_name):
     job_number_index = path_elements.index('run_irods_tests') + 1
     return os.path.join('/jenkins_output/run_irods_tests',
                         path_elements[job_number_index],
-                        to_os_name(docker_image_name),
-                        to_database_name(docker_image_name))
+                        to_os_name(docker_image_name))#,
+
+def generate_log_path(test_name, is_unit_test, docker_image_name, job_output_dir):
+    if is_unit_test:
+        log_dir = os.path.join(job_output_dir, 'unit_tests')
+    else:
+        log_dir = os.path.join(job_output_dir, to_database_name(docker_image_name), test_name)
+
+    try:
+        os.makedirs(log_dir)
+    except:
+        pass
+
+    return os.path.join(log_dir, 'job_' + test_name + '.log')
 
 def main():
     parser = argparse.ArgumentParser()
@@ -138,7 +157,7 @@ def main():
     except:
         pass
 
-    sys.stdout.flush()
+    print('Launching tests ...')
 
     containers = [{
         'test_name': docker_cmd['test_name'],
@@ -164,10 +183,12 @@ def main():
                 # The path of the file that will hold the execution results of docker commands and other
                 # information relating to the test. For example, the file will contain things such as the
                 # output of the iRODS setup script.
-                'log_path': os.path.join(job_output_dir, docker_cmd['test_name'], 'job_' + docker_cmd['test_name'] + '.log')
+                'log_path': generate_log_path(docker_cmd['test_name'], docker_cmd['is_unit_test'], args.image_name, job_output_dir)
             }
         )
     } for docker_cmd in docker_cmds_list]
+
+    print('Waiting for test results ...')
 
     container_results = [{'test_name': c['test_name'], 'error_code': c['proc'].get()} for c in containers]
 
@@ -182,6 +203,8 @@ def main():
             print('\t' + f)
         print('\nSee {0}/job_<test_name>.log for details.'.format(job_output_dir))
         sys.exit(1)
+    else:
+        print('\nALL TESTS PASSED!')
 
 if __name__ == '__main__':
     main()

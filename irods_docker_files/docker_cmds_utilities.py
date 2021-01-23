@@ -167,6 +167,7 @@ def run_database(database_type, database_container, alias_name, network_name):
 
 def execute_shell_command(_cmd, _log):
     _log.write('Executing command: {0}\n'.format(_cmd))
+    _log.flush()
 
     p = Popen(_cmd, stdout=PIPE, stderr=PIPE)
     out, err = p.communicate()
@@ -176,6 +177,7 @@ def execute_shell_command(_cmd, _log):
     if err: _log.write(err)
 
     _log.write('\n')
+    _log.flush()
 
     return p.returncode
 
