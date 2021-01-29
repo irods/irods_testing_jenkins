@@ -16,7 +16,6 @@ from docker_cmd_builder import DockerCommandsBuilder
 
 import ci_utilities
 import docker_cmds_utilities
-import irods_python_ci_utilities
 
 def download_list_of_tests(irods_repo, irods_sha, relative_path):
     url = urlparse(irods_repo)
