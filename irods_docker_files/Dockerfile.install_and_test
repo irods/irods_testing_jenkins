@@ -7,7 +7,12 @@ ENV DATABASE=$database_type
 ARG arg_jenkins_ouput=/worm_hole_missing
 ENV JENKINS_OUTPUT=${arg_jenkins_output}
 
-RUN pip install xmlrunner PyJWT
+RUN { apt-get update && apt-get install -y curl; } || { yum update -y && yum install -y curl; }
+
+RUN curl -O https://bootstrap.pypa.io/2.7/get-pip.py && \
+    python get-pip.py && \
+    python -m pip install --upgrade "pip < 21.0" && \
+    python -m pip install xmlrunner PyJWT
 
 ADD setup_database_client.py /
 RUN chmod u+x /setup_database_client.py

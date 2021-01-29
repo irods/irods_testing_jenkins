@@ -27,9 +27,9 @@ CMD ["/sbin/init"]
 #
 FROM centos_systemd
 
-RUN yum -y update && yum clean all &&\
-    yum -y install epel-release sudo vim wget zip rpm-build make cmake3 gcc-c++ nmap-ncat && yum clean all &&\
-    yum -y install python python-psutil python-requests python-jsonschema &&\ 
+RUN yum -y update && yum clean all && \
+    yum -y install epel-release sudo vim wget zip rpm-build make cmake3 gcc-c++ nmap-ncat && yum clean all && \
+    yum -y install python python-psutil python-requests python-jsonschema && \ 
     yum -y install python-pip git net-tools iputils && \
     yum clean all
 
@@ -53,9 +53,9 @@ RUN cd /tmp && git clone https://github.com/irods/irods_python_ci_utilities && \
 ENV IRODS_BUILD_DIRECTORY=/irods_build
 ENV IRODS_TEST_RESULTS=/irods_test_env
 
-RUN mkdir -p $IRODS_BUILD_DIRECTORY &&\
+RUN mkdir -p $IRODS_BUILD_DIRECTORY && \
     chmod -R 775 $IRODS_BUILD_DIRECTORY 
 
-RUN mkdir -p $IRODS_TEST_RESULTS &&\
+RUN mkdir -p $IRODS_TEST_RESULTS && \
     chmod -R 775 $IRODS_TEST_RESULTS
 

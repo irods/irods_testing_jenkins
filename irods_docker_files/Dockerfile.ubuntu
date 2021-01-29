@@ -4,24 +4,28 @@ FROM $base_image
 RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils && \
     apt-get install -y apt-transport-https wget lsb-release sudo make zip netcat && \
     apt-get install -y python python-psutil python-requests python-jsonschema && \
-    apt-get install -y python-pip git net-tools iputils-ping && \
-    pip install pygithub==1.45
+    apt-get install -y git net-tools iputils-ping
 
-RUN pip install --upgrade pip
+RUN apt-get install -y curl && \
+    curl -O https://bootstrap.pypa.io/2.7/get-pip.py && \
+    python get-pip.py && \
+    python -m pip install --upgrade "pip < 21.0"
 
-RUN apt-get install -y ca-certificates curl gnupg-agent software-properties-common &&\
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - &&\
+RUN python -m pip install pygithub==1.45
+
+RUN apt-get install -y ca-certificates curl gnupg-agent software-properties-common && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - && \
     apt-key fingerprint 0EBFCD88 && \
     add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" && \
     apt-get update -qq && \
     apt-get install -qqy docker-ce
 
-RUN apt-get clean &&\
-    apt-get update &&\
+RUN apt-get clean && \
+    apt-get update && \
     apt-get install -y libssl-dev libfuse2 lsof rsyslog gdebi vim fuse
 
 RUN apt-get install -y libffi-dev libssl-dev
-RUN pip install -U setuptools
+RUN python -m pip install -U setuptools
 RUN python -m easy_install --upgrade pyOpenSSL
 RUN python -m easy_install --upgrade cryptography
 RUN apt-get update
@@ -32,16 +36,16 @@ RUN cd /tmp && git clone https://github.com/irods/irods_python_ci_utilities && \
 ENV IRODS_BUILD_DIRECTORY=/irods_build
 ENV IRODS_TEST_RESULTS=/irods_test_env
 
-RUN DEBIAN_FRONTEND=noninteractive &&\
-    mkdir -p $IRODS_BUILD_DIRECTORY &&\
+RUN DEBIAN_FRONTEND=noninteractive && \
+    mkdir -p $IRODS_BUILD_DIRECTORY && \
     chmod -R 775 $IRODS_BUILD_DIRECTORY 
 
-RUN DEBIAN_FRONTEND=noninteractive &&\
-    mkdir -p $IRODS_TEST_RESULTS &&\
+RUN DEBIAN_FRONTEND=noninteractive && \
+    mkdir -p $IRODS_TEST_RESULTS && \
     chmod -R 775 $IRODS_TEST_RESULTS 
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata &&\
-    ln -fs /usr/share/zoneinfo/US/Eastern /etc/localtime &&\
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata && \
+    ln -fs /usr/share/zoneinfo/US/Eastern /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata
 
 RUN echo exit 0 > /usr/sbin/policy-rc.d
