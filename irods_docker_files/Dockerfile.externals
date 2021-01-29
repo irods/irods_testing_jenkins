@@ -10,8 +10,8 @@ ENV EXTERNALS_COMMITISH=${arg_externals_commitish}
 
 ENV IRODS_EXTERNALS_DIRECTORY=/irods_externals
 
-RUN mkdir -p $IRODS_EXTERNALS_DIRECTORY &&\
-    chmod -R 775 $IRODS_EXTERNALS_DIRECTORY &&\
+RUN mkdir -p $IRODS_EXTERNALS_DIRECTORY && \
+    chmod -R 775 $IRODS_EXTERNALS_DIRECTORY && \
     git clone $EXTERNALS_REPO $IRODS_EXTERNALS_DIRECTORY && \
     cd $IRODS_EXTERNALS_DIRECTORY && git checkout $EXTERNALS_COMMITISH && git submodule update --init --recursive
 

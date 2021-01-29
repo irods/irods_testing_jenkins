@@ -1,5 +1,4 @@
 ARG base_image
-
 FROM $base_image
 
 ARG arg_irods_repo="https://github.com/irods/irods"
@@ -18,8 +17,8 @@ ENV IRODS_BUILD_DIRECTORY=/irods_build
 
 ENV IRODS_REPO_DIRECTORY=/irods_git_repo
 
-RUN mkdir -p $IRODS_REPO_DIRECTORY &&\
-    chmod -R 775 $IRODS_REPO_DIRECTORY &&\
+RUN mkdir -p $IRODS_REPO_DIRECTORY && \
+    chmod -R 775 $IRODS_REPO_DIRECTORY && \
     git clone $IRODS_REPO $IRODS_REPO_DIRECTORY && \
     cd $IRODS_REPO_DIRECTORY && git checkout $IRODS_COMMITISH && \
     git submodule update --init
