@@ -85,7 +85,7 @@ def to_os_name(docker_image_name):
     if 'ubuntu_16' in name: return 'Ubuntu_16'
     if 'ubuntu_18' in name: return 'Ubuntu_18'
     if 'ubuntu_20' in name: return 'Ubuntu_20'
-    if 'centos_7' in name : return 'Centos_7'
+    if 'centos_7' in name : return 'Centos linux_7'
     raise RuntimeError('No OS name defined for [{0}].'.format(docker_image_name))
 
 def to_database_name(docker_image_name):
@@ -101,7 +101,7 @@ def generate_job_output_directory_path(jenkins_output_path, docker_image_name):
     job_number_index = path_elements.index('run_irods_tests') + 1
     return os.path.join('/jenkins_output/run_irods_tests',
                         path_elements[job_number_index],
-                        to_os_name(docker_image_name))#,
+                        to_os_name(docker_image_name))
 
 def generate_log_path(test_name, is_unit_test, docker_image_name, job_output_dir):
     if is_unit_test:
