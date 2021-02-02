@@ -208,9 +208,12 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias
                         setup_database = 'python setup_database.py --database_type {0} --database_machine {1} --provider_machine {2} --network_name {3}'.format(database_type, database_container, irods_container, network_name)
                         subprocess.check_call(setup_database, shell=True)
 
-        # Execute a command in the running container
+        # Execute a command in the running container.
         ec = execute_shell_command(exec_cmd, job_log)
         if ec != 0:
+            execute_shell_command(stop_cmd, job_log)
+            execute_shell_command(['docker', 'stop', database_container], job_log)
+            delete_network(network_name)
             return ec
 
         # Launch federation test.
@@ -224,12 +227,16 @@ def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias
             ec = execute_shell_command(run_test_cmd, job_log)
             if ec != 0:
                 execute_shell_command(stop_cmd, job_log)
+                execute_shell_command(['docker', 'stop', database_container], job_log)
+                delete_network(network_name)
                 return ec
 
-        # Stop the container
+        # Stop the container.
         job_log.write('Stopping container [' + irods_container + '] ...\n')
         ec = execute_shell_command(stop_cmd, job_log)
         if ec != 0:
+            execute_shell_command(['docker', 'stop', database_container], job_log)
+            delete_network(network_name)
             return ec
 
         if database_container is not None:
