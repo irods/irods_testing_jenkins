@@ -26,8 +26,8 @@ RUN apt-get clean && \
 
 RUN apt-get install -y libffi-dev libssl-dev
 RUN python -m pip install -U setuptools
-RUN python -m easy_install --upgrade pyOpenSSL
-RUN python -m easy_install --upgrade cryptography
+RUN python -m easy_install --upgrade 'pyOpenSSL<=3.3.2'
+RUN python -m easy_install --upgrade 'cryptography<=3.3.2'
 RUN apt-get update
 
 RUN cd /tmp && git clone https://github.com/irods/irods_python_ci_utilities && \
