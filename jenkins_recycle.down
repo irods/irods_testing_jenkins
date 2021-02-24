@@ -1,0 +1,8 @@
+#!/bin/bash -e
+docker service rm irods-jenkins_main
+docker service rm registry
+docker network prune
+docker secret rm jenkins-pass
+docker secret rm jenkins-user
+docker swarm  leave  --force
+#docker image rm irods-jenkins:latest localhost:5000/irods-jenkins

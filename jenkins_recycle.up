@@ -1,0 +1,55 @@
+#!/bin/bash -e
+
+usage() {
+    printf '%s\n' "$0 [options] [ <login> <password> <jenkins_output>]" \
+        $'\t options are: --advertise-addr [IPADDR|HOSTNAME]' \
+        $'\t              --jenkins-output-dir <PATH>' \
+        $'\t (If login and password are omitted, they are prompted from the console)'
+    exit 1;
+}
+
+ADVERT_ADDR=""
+JENKINS_OUTPUT_DIR=""
+
+while [[ $1 = -* ]]; do
+    case $1 in
+        -ad*|--ad*) ADVERT_ADDR="--advertise-addr=$2"; shift;;
+        -je*|--je*) JENKINS_OUTPUT_DIR="$2"; shift;;
+        -*) usage ;;
+    esac
+    shift
+done
+
+if [ $# -eq 0 ] ; then
+    read -p "login -> " U
+    read -p "passw -> " P
+    set "$U" "$P"
+elif  [ $# -eq 2 ] ; then
+    true
+else
+    usage
+fi
+
+# -- delete untracked files in particular under jenkins_home/
+
+sudo git clean -fdx
+
+# -- force removal of old irods-jenkins builds --
+# IMAGES=($(docker image ls --filter=reference="irods-jenkins:*" -q))
+# [ ${#IMAGES[*]} -gt 0 ] && docker image rm -f ${IMAGES[*]}
+
+# -- build new Jenkins
+
+docker build -t irods-jenkins --build-arg arg_jenkins_output=${JENKINS_OUTPUT_DIR:="$HOME/jenkins_output"} \
+        -f Dockerfile.jenkins . --no-cache
+
+# -- set up the Jenkins instance with docker swarm
+
+docker swarm init $ADVERT_ADDR
+docker service create --name registry --publish published=5000,target=5000 registry:2
+docker tag irods-jenkins:latest localhost:5000/irods-jenkins
+docker push localhost:5000/irods-jenkins
+curl -X GET http://localhost:5000/v2/_catalog
+docker secret create jenkins-user - <<<"$1"
+docker secret create jenkins-pass - <<<"$2"
+docker stack deploy -c irods_jenkins.yml irods-jenkins
