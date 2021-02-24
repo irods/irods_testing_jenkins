@@ -84,14 +84,27 @@ class CI_client_interface (object):
         filelist = [ sys.stdout ]
         for s in streams: filelist.append(s)
         locks = { f: threading.Lock() for f in filelist }
+        MAX_LINE_ELEMENTS = 256
+        multi_CR = re.compile(b'(\n+)')
 
-        def readgen(gen,ident):
-            for line in gen:
-                log_line = "(" + ident +") -- | " + line.decode("utf8")
-                # -- output with per-stream mutex locked
-                for f in filelist:
-                    with locks[f]:
-                        f.write(log_line)
+        def CR_repartition(line_buf, new_chars=b''):
+            line_buf.append(new_chars)
+            log_line = b''
+            if b'\n' in new_chars or len(line_buf) > MAX_LINE_ELEMENTS:
+                line_buf = multi_CR.split(b''.join(line_buf))
+                log_line += b''.join(line_buf[:2])
+                del line_buf[:2]
+            return log_line, list(filter(None,line_buf))
+
+        def readgen(gen, ident):
+            buf = []
+            for chars in gen:
+                log_line, buf = CR_repartition (buf, chars)
+                if log_line:
+                    for f in filelist:
+                        with locks[f]:
+                            f.write("(" + ident + ") -- | " + log_line.decode("utf8"))
+
 
         for ctnr in containers:
             t = threading.Thread(target=readgen, args=(ctnr.log_stream, ctnr.name))
