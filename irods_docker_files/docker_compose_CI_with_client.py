@@ -51,15 +51,20 @@ def main() :
 
     import importlib
     sys.path.insert(0, Args.local_repository)
-    test_hook = importlib.import_module('test_hook')
-    
-    # The following runs the test_hook module imported from client repo. That module's
-    # run() function calls back to the injected object (of class 'CI_client_interface'
-    # - defined below):
-    #
+    test_hook_module = importlib.import_module('irods_consortium_continuous_integration_test_module')
 
-    exit(test_hook.run(
-        CI_client_interface (modifiers_for_config, Args.local_repository)
+    # The following runs the test_hook module imported from client repo. That module's
+    # run() function calls back via an injected object of class 'CI_client_interface'.
+
+    compose_proj_dir = Args.local_repository
+
+    initialize = getattr(test_hook_module,'init',None)
+    if callable(initialize):
+        dir_ = initialize()
+        if dir: compose_proj_dir = dir_
+
+    exit(test_hook_module.run(
+        CI_client_interface (modifiers_for_config, compose_proj_dir)
     ))
 
 
@@ -165,7 +170,7 @@ class CI_client_interface (object):
                     print("\n-- WARNING -- not modifying configuration value at level {!r} in key hierarchy"
                           "\ndue to mismatch of value type in basic and modifier configs"
                           "" .format(key_hierarchy(k)), file = sys.stderr)
-                    
+
         if allow_override:
             update_lhs_scalars_with_rhs( self.config, self.modifier_config )
         return self.config.copy()
