@@ -1,0 +1,59 @@
+The new jenkins dot is called `generic_client_dot`.
+
+It uses a docker-compose.yml in the root directory of a client repo
+For example, see [here](https://github.com/d-w-moore/python-irodsclient/tree/docker_compose_testing)
+
+Also  present in that directory should be a test hook script.
+
+At this writing PRC is the model on which to base further client tests. Use the test_hook to furnish
+the basic starting configuration (which can be modified by the **CONFIG_JSON** parameter in
+`generic_client_dot`.
+
+
+
+Docker Compose Setup
+---
+
+Typically, but not necessarilty, the following services in separate containers under docker-compose:
+
+  - provider
+    * for python-irodsclient, this container's base image is fixed at `ubuntu:18.04`
+
+  - ICAT (base image is the generic postgres image)
+
+  - client-runner
+
+Steps are, currently:
+  - Use `build_base_os` and `build_irods_on_base`
+  - bring up `generic_client_dot`
+  - fill in parameters including client repo URL,
+    - `PARAMETER_REMOTE_REPO`
+      * Example `https://github.com/d-w-moore/python-irodsclient`
+    - `PARAMETER_LOCAL_REPO_PREFIX`
+      * Example: `/irods_jenkins_sandbox/prc_test`
+    - `PARAMETER_COMMITISH`
+      * Example: `docker_compose_testing`
+    - (optionally) `CONFIG_JSON`
+      * keys and values on same hierarchical level as in the repo's test_hook configuration dictionary can be overridden here
+
+
+Extra notes.
+---
+
+For quick cleanup and reinstall of the local Jenkins instance, one options is to `cd` to
+the repo top level and:
+  - run `./jenkins_recycle.down`
+  - run `sudo git clean -fdx` to delete untracked directories and files in the repo
+  - optionally `docker system prune` (this cuts pretty deep , so use with caution)
+  - run `./jenkins_recycle.up -je JENKINS_OUTPUT_DIR (defaults to ~/jenkins_output)
+
+Make symbolic link at /irods_jenkins_sandbox on the host machine
+  - this allows docker-compose relative volume mounts to function within the docker-in-docker Jenkins
+  - the sym-link should point to somewhere convenient: `~/jenkins_sandbox`
+
+in `./irods_jenkins.yml`:
+  - comment out the /projects mounts if they do not exist locally
+  - make sure jenkins_output mount points at the same place  as the JENKINS_OUTPUT_DIR mentioned above
+
+Run `./jenkins_recycle.up` (will prompt first for secrets)
+

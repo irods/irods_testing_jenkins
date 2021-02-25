@@ -1,0 +1,64 @@
+<mxfile host="app.diagrams.net" modified="2021-02-25T15:04:33.668Z" agent="5.0 (X11)" etag="q4F5stMupJGYEbrjlWp7" version="14.4.3" type="github">
+  <diagram id="f31MAkWk0b6WlTFQEC3q" name="Page-1">
+    <mxGraphModel dx="837" dy="464" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-3" value="&lt;div&gt;&lt;b&gt;(H) &lt;br&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;host &lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="30" width="230" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-4" value="&lt;div&gt;client repo&lt;/div&gt;&lt;div&gt;+ irods consortium hook (py module)&lt;br&gt;&lt;/div&gt;&lt;div&gt;+ path/to/docker-compose.yml&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;" vertex="1" parent="1">
+          <mxGeometry x="500" y="100" width="230" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-5" value="" style="endArrow=none;dashed=1;html=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="440" y="290" as="sourcePoint" />
+            <mxPoint x="440" y="40" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-6" value="" style="endArrow=none;dashed=1;html=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="440" y="40" as="sourcePoint" />
+            <mxPoint x="760" y="40" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-7" value="/irods_jenkins_sandbox" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;labelBorderColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="460" y="70" width="140" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-8" value="" style="endArrow=classic;html=1;" edge="1" parent="1" target="tySmDbzDYtYw8JsEiwFR-7">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="320" y="80" as="sourcePoint" />
+            <mxPoint x="460" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-9" value="" style="endArrow=classic;html=1;entryX=0.05;entryY=0.95;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" target="tySmDbzDYtYw8JsEiwFR-7">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="320" y="250" as="sourcePoint" />
+            <mxPoint x="350" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-11" value="" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="290" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-12" value="" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="270" y="280" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-13" value="(D1...N)" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="270" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-1" value="&lt;b&gt;(D0)&lt;/b&gt;&lt;div&gt;irods_testing_jenkins +&lt;/div&gt;&lt;div&gt;python3 with PyPI docker-compose&lt;br&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="160" width="230" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-14" value="&lt;div&gt;Docker siblings&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="190" y="340" width="40" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="tySmDbzDYtYw8JsEiwFR-15" value="" style="endArrow=classic;html=1;exitX=0.817;exitY=-0.017;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.214;entryY=0.95;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="tySmDbzDYtYw8JsEiwFR-13" target="tySmDbzDYtYw8JsEiwFR-7">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="410" y="270" as="sourcePoint" />
+            <mxPoint x="460" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
