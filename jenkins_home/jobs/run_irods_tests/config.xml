@@ -1,5 +1,5 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.36">
+<flow-definition plugin="workflow-job@2.40">
   <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
@@ -71,7 +71,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.77">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.87">
     <script>node {
      def build_id = env.BUILD_ID
      print(build_id)
@@ -94,8 +94,8 @@
                               &apos; --irods_commitish &apos; + PARAMETER_IRODS_COMMITISH +
                               &apos; --test_parallelism &apos; + PARAMETER_TEST_PARALLELISM +
                               &apos; --externals_dir &apos; + PARAMETER_EXTERNALS_ROOT_DIR
-                if (PARAMETER_RUN_UNIT_TESTS == &quot;false&quot;) {
-                    run_cmd = run_cmd + &apos; --skip_unit_tests&apos;
+                if (PARAMETER_RUN_UNIT_TESTS == &quot;true&quot;) {
+                    run_cmd = run_cmd + &apos; --run_unit_tests&apos;
                 }
                 if (PARAMETER_RUN_CORE_TIMING_TESTS == &quot;true&quot;) {
                     run_cmd = run_cmd + &apos; --run_timing_tests&apos;

@@ -138,15 +138,14 @@ def main():
 
     if args.run_timing_tests:
         test_list = ['timing_tests']
+        docker_cmds_list.extend(to_docker_commands(test_list, args))
+    elif args.is_unit_test:
+        test_list = download_list_of_tests(args.irods_repo, irods_sha, 'unit_tests/unit_tests_list.json')
+        docker_cmds_list.extend(to_docker_commands(test_list, args, args.is_unit_test))
     else:
-        if args.is_unit_test:
-            test_list = download_list_of_tests(args.irods_repo, irods_sha, 'unit_tests/unit_tests_list.json')
-            docker_cmds_list.extend(to_docker_commands(test_list, args, args.is_unit_test))
-
         # Add core-test commands to the list.
         test_list = download_list_of_tests(args.irods_repo, irods_sha, 'scripts/core_tests_list.json')
-
-    docker_cmds_list.extend(to_docker_commands(test_list, args))
+        docker_cmds_list.extend(to_docker_commands(test_list, args))
 
     run_pool = Pool(processes=int(args.test_parallelism))
     job_output_dir = generate_job_output_directory_path(args.jenkins_output, args.image_name)

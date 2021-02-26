@@ -15,7 +15,7 @@ from docker_cmd_builder import DockerCommandsBuilder
 def get_test_name_prefix(base_os, prefix):
     test_name_prefix = base_os + '-' + prefix
 
-def run_tests(image_name, irods_sha, test_name_prefix, cmd_line_args, skip_unit_tests=False):
+def run_tests(image_name, irods_sha, test_name_prefix, cmd_line_args):
     # build options list for run_tests_in_parallel
     options = []
     options.append(['--image_name', image_name])
@@ -27,10 +27,10 @@ def run_tests(image_name, irods_sha, test_name_prefix, cmd_line_args, skip_unit_
     options.append(['--irods_commitish', irods_sha])
     options.append(['--test_parallelism', cmd_line_args.test_parallelism])
     options.append(['--externals_dir', cmd_line_args.externals_dir])
-    if skip_unit_tests is False:
-        options.append(['--is_unit_test'])
     if cmd_line_args.run_timing_tests:
         options.append(['--run_timing_tests'])
+    elif cmd_line_args.run_unit_tests:
+        options.append(['--is_unit_test'])
 
     run_tests_cmd_list = ['python', 'run_tests_in_parallel.py']
     for option in options:
@@ -95,7 +95,7 @@ def main():
     parser.add_argument('--test_parallelism', default='4', help='The number of tests to run in parallel', required=False)
     parser.add_argument('-o', '--output_directory', type=str, required=True)
     parser.add_argument('--passthrough_arguments', type=str)
-    parser.add_argument('--skip_unit_tests', action='store_true', default=False)
+    parser.add_argument('--run_unit_tests', action='store_true', default=False)
     parser.add_argument('--run_timing_tests', action='store_true', default=False)
     
     args = parser.parse_args()
@@ -112,7 +112,7 @@ def main():
 
     if not args.test_plugin:
         irods_sha = ci_utilities.get_sha_from_commitish(args.irods_repo, args.irods_commitish)
-        run_tests(build_tag, irods_sha, test_name_prefix, args, args.skip_unit_tests)
+        run_tests(build_tag, irods_sha, test_name_prefix, args)
     else:
         plugin_repo = args.plugin_repo
         plugin_repo_split = plugin_repo.split('/')
