@@ -3,14 +3,10 @@ FROM $base_image
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils && \
     apt-get install -y apt-transport-https wget lsb-release sudo make zip netcat && \
-    apt-get install -y python python-psutil python-requests python-jsonschema && \
+    apt-get install -y python python-pip python-psutil python-requests python-jsonschema && \
     apt-get install -y git net-tools iputils-ping
 
-RUN apt-get install -y curl && \
-    curl -O https://bootstrap.pypa.io/2.7/get-pip.py && \
-    python get-pip.py && \
-    python -m pip install --upgrade "pip < 21.0"
-
+RUN python -m pip install --upgrade "pip<21.0"
 RUN python -m pip install pygithub==1.45
 
 RUN apt-get install -y ca-certificates curl gnupg-agent software-properties-common && \
