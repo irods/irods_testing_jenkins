@@ -181,8 +181,22 @@ def execute_shell_command(_cmd, _log):
 
     return p.returncode
 
+def random_log_path(v=None):
+    name = tempfile.NamedTemporaryFile(delete=False).name
+    if isinstance(v,list):
+        v.append(name)
+    return name
+
+def call_on_retv_destruct(f,args=(),kwarg_seq=()):
+    class Anon:
+        def __del__(self): f(*args,**dict(kwarg_seq))
+    return Anon()
+
 def run_command_in_container(run_cmd, exec_cmd, stop_cmd, irods_container, alias_name, database_container, database_type, network_name, **kwargs):
-    with open(kwargs['log_path'], 'w') as job_log:
+    temp_log = []
+    with open(kwargs.get('log_path',None) or random_log_path(temp_log), 'w') as job_log:
+        scoped_1 = call_on_retv_destruct(lambda: print("--- Temporary logs at '{}' in Jenkins container:\n{}".format(
+                                                       temp_log[0], open(temp_log[0]).read()) if temp_log else ''))
         # Launch container for test.
         ec = execute_shell_command(run_cmd, job_log)
         if ec != 0:

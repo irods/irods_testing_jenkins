@@ -33,15 +33,15 @@ RUN yum -y update && yum clean all && \
     yum -y install python-pip git net-tools iputils && \
     yum clean all
 
+RUN pip install --upgrade 'pip<21.0'
 RUN pip install --ignore-installed pygithub==1.45
+RUN python -m pip install -U pyOpenSSL==16.2.0
 
 RUN yum -y install yum-utils device-mapper-persistent-data lvm2 rsyslog
 
 RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
 RUN yum -y install docker-ce docker-ce-cli containerd.io
-
-RUN pip install --upgrade pip
 
 RUN yum -y install initscripts && yum clean all
 
