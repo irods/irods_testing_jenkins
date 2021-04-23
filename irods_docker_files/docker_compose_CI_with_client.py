@@ -9,9 +9,107 @@ import re
 import sys
 import copy
 import json
+import time
 from pprint import pformat
 from os.path import join
 import compose.cli.command
+
+class testgen:
+    def __init__(self,file_,tm=0.15):
+        self.file = (file_ if getattr(file_,'read',None) else open(file_,"rb"))
+        self.tm = tm
+    def __iter__(self):
+        with self.file as f:
+          x = '.'
+          while x:
+            x = f.read(2)
+            time.sleep(self.tm)
+            if x: yield x
+
+def test():
+    import io
+    f = testgen(
+        #io.BytesIO(b'abc\ndef\nghij') 
+        ## or: 
+        '/tmp/test.dat'
+        ,tm=0
+    )
+    print_generated = readgen([sys.stdout])
+    print_generated(f,
+        ident_ = 'mhyident'
+    )
+
+
+def compile_EOL_regex(delimiter): return re.compile( b'('       # parentheses mean that we retain the delimiters
+                                                    + delimiter
+                                                    + b')' )
+
+class readgen:
+
+    MAX_LINE_ELEMENTS = 256
+    EOL_splitters = { delim:compile_EOL_regex(delim) for delim in [b'\n',b'\r\n'] }
+    EOL_splitters[b''] = re.compile(b'(.+)',re.DOTALL)
+    class IllegalDelimiter(RuntimeError): pass
+
+    class dummyLock:
+        def __enter__(self): pass
+        def __exit__(self,*x): pass
+
+    def __init__(self, files_ , file_locks_ = ()):
+        self.buf = []
+        self.files = files_
+        self.fileLocks = dict(file_locks_)
+        self.ident = ''
+
+    # Get a piece of the container log_stream's output to be printed to console.
+    # (Usually will consist of zero or more lines)
+
+    def get_buffered_content(self, new_chars=b'', delim = b'\n'): # b'\n' => output only whole lines
+                                                                  # b''   => output all of buffer
+        log_lines = b''
+        if not isinstance(new_chars,bytes):
+            new_chars = str(new_chars).encode('utf-8')
+        self.buf.append(new_chars)
+        if delim in new_chars or len(self.buf) > self.MAX_LINE_ELEMENTS:
+            regexSplitter = self.EOL_splitters.get(delim)
+            if regexSplitter is None:
+                if isinstance(delim,bytes): regexSplitter = self.compile_EOL_regex(delim)
+                else:                       raise self.IllegalDelimiter('cannot make delimiter of: {!r}'.format(delim))
+            buf = regexSplitter.split(b''.join(self.buf)) + [b'']
+            cut_offs = 0; last = 1                            # Calculate the negative end-offset of the
+            if isinstance(delim,bytes) and len(delim) >= 1:   # last chunk containing a 'delim' character.
+                for chunk in reversed( buf[-3:-1] ):          # This will always be 1 for a flush operation.
+                    last += 1
+                    if chunk.startswith(delim):
+                        cut_offs=1
+                        break
+            log_lines += b''.join(buf[:-last])
+            self.buf = list(filter(None,buf[-last+cut_offs:]))
+        else:
+            pass
+#######
+# dwm #
+      # if 'runner' in  self.ident:
+      #     log_lines = '*** dwm *** LEN of els in line buffer = {!r}'.format([len(x) for x in self.buf]).encode('utf-8')
+      # # dwm DEBUG -- # print('\t self.buf=', self.buf,file=sys.stderr)
+#######
+        return log_lines
+
+    # Thread entry point.
+
+    def __call__(self, log_generator, ident_ = None) :
+        def stream_out(Lines):
+            if not Lines: return
+            for f in self.files:
+                with self.fileLocks.get(f,self.dummyLock()):
+                    for line in Lines:
+                        f.write("(" + self.ident + ") -- | " + line.decode("utf-8") + "\n")
+        if ident_ is None: ident_ = '<{}>'.format(id(self))
+        self.ident = ident_
+        for chunk in log_generator:
+            stream_out (self.get_buffered_content(chunk, delim = b'\n').splitlines())
+        stream_out (self.get_buffered_content(b'', delim = b'').splitlines())
+
 
 def main() :
 
@@ -79,35 +177,12 @@ class CI_client_interface (object):
 
 
     @staticmethod
-    def _spawn_container_log_spoolers(containers, *streams):
-
-        filelist = [ sys.stdout ]
-        for s in streams: filelist.append(s)
+    def _spawn_container_log_spoolers(containers, streams = ()):
+        filelist = [sys.stdout] + list(_ for _ in streams)
         locks = { f: threading.Lock() for f in filelist }
-        MAX_LINE_ELEMENTS = 256
-        multi_CR = re.compile(b'(\n+)')
-
-        def CR_repartition(line_buf, new_chars=b''):
-            line_buf.append(new_chars)
-            log_line = b''
-            if b'\n' in new_chars or len(line_buf) > MAX_LINE_ELEMENTS:
-                line_buf = multi_CR.split(b''.join(line_buf))
-                log_line += b''.join(line_buf[:2])
-                del line_buf[:2]
-            return log_line, list(filter(None,line_buf))
-
-        def readgen(gen, ident):
-            buf = []
-            for chars in gen:
-                log_line, buf = CR_repartition (buf, chars)
-                if log_line:
-                    for f in filelist:
-                        with locks[f]:
-                            f.write("(" + ident + ") -- | " + log_line.decode("utf8"))
-
-
         for ctnr in containers:
-            t = threading.Thread(target=readgen, args=(ctnr.log_stream, ctnr.name))
+            t = threading.Thread( target=readgen(filelist, locks),
+                                  args=(ctnr.log_stream, ctnr.name) )
             t.setDaemon(True)
             t.start()
 
@@ -189,4 +264,7 @@ class CI_client_interface (object):
         return self.config.copy()
 
 if __name__ == '__main__':
-    main()
+    if sys.argv[1:] == ['-test']:
+        test()
+    else:
+        main()
