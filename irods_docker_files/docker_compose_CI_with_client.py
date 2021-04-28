@@ -29,9 +29,7 @@ class testgen:
 def test():
     import io
     f = testgen(
-        #io.BytesIO(b'abc\ndef\nghij') 
-        ## or: 
-        '/tmp/test.dat'
+        io.BytesIO(b'abc\ndef\nghij') ## or: #'/tmp/test.dat'
         ,tm=0
     )
     print_generated = readgen([sys.stdout])
@@ -65,7 +63,7 @@ class readgen:
     # (Usually will consist of zero or more lines)
 
     def get_buffered_content(self, new_chars=b'', delim = b'\n'): # b'\n' => output only whole lines
-                                                                  # b''   => output all of buffer
+                                                                  # b''   => output all of buffer (flush)
         log_lines = b''
         if not isinstance(new_chars,bytes):
             new_chars = str(new_chars).encode('utf-8')
