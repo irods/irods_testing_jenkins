@@ -147,6 +147,26 @@ def main() :
 
     import importlib
     sys.path.insert(0, Args.local_repository)
+
+    # Modify the python3 command invoking this script
+    # To insert new override KEY=VALUE pairs for modifiers_for_config, for example
+    #    def build_cmd = 'env irods_package_dir="'+IRODS_PACKAGE_DIR+'" ' +  // IRODS_PACKAGE_DIR entry box value
+    #                             '    X="' + 'HELLO' + '" ' +               // literal value "HELLO"
+    #                             '    DOTENV_INJECT_KEYS=irods_package_dir,X ' +
+    #                             ' python3 -u docker_compose_CI_with_client.py ' +
+    #                             ' --remote_repo=' + PARAMETER_REMOTE_REPO  +
+
+    entry_box_inject_keys = os.environ.get('DOTENV_INJECT_KEYS','')
+
+    inject_keys = list(filter(None, [k.strip() for k in entry_box_inject_keys.split(',')]))
+    if inject_keys:
+        dotenv_update_dct = modifiers_for_config.setdefault('yaml_substitutions',{})
+        dotenv_update_dct.update( (k,os.environ.get(k,'')) for k in inject_keys)
+        print ('***************')
+        print ('dotenv_update_dct = \n{!r}'.format(dotenv_update_dct))
+        print ('***************')
+        exit()
+
     test_hook_module = importlib.import_module('irods_consortium_continuous_integration_test_module')
 
     # The following runs the test_hook module imported from client repo. That module's
