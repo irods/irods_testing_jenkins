@@ -12,6 +12,7 @@ import json
 import time
 from pprint import pformat
 from os.path import join
+import docker
 import compose.cli.command
 
 class testgen:
@@ -109,6 +110,55 @@ class readgen:
         stream_out (self.get_buffered_content(b'', delim = b'').splitlines())
 
 
+def run_build_containers( project, service_names_in_order ):
+    service_lookup = { s.name:s for s in project.services }   
+    # iterate through the named services, running the build process and CMD phase for each
+    # Output should appear on the console for all parts built or commands run.
+    for name in service_names_in_order:
+        project.build(service_names = [name])
+        s = service_lookup[name]
+        c = s.create_container()
+        dclient = docker.client.from_env()
+        for network_name in s.networks:
+            try:
+                dclient.networks.get(network_name)
+            except docker.errors.NotFound:
+                dclient.networks.create(network_name)
+        if not getattr(c,'log_stream',None):
+            c.attach_log_stream()
+        c.start()
+        for i in c.log_stream:
+            print ('>> '+i.decode('utf8'))
+        w = c.wait()
+        print(s.name,'returned',w)
+
+
+def get_ordered_dependencies(svcn,prj,ser=None,pdict=None,order=(),seen=()):
+    '''Given:
+       - svcn, the name of the service for the main CI test container (whose exit status determines success).
+       - prj, the compose project returned by get_project().
+
+    Calculate list of names of all svcn's dependents that must be built (inclusive of svcn, which will be last).
+    '''
+    if pdict is None:
+        pdict = {svc.name:svc for svc in prj.services}
+    if order == ():
+        tmp_order = dict(order)  # initialize ordering dictionary at root of recursion
+    else:
+        tmp_order = order
+    seen = dict(seen) if seen == () else seen
+    ser = [0] if ser is None else ser
+    dep_names = pdict[svcn].get_dependency_names()
+    tmp_order[svcn] = ser[0]
+    ser[0] += 1
+    seen[svcn]=1
+    for name in dep_names:
+        if not seen.get(name):
+            get_ordered_dependencies(name,prj,ser,pdict,tmp_order)
+    if order == ():
+        return [k for k,v in sorted(tmp_order.items(), key=lambda _:_[1],reverse=True)]
+
+
 def main() :
 
     parser = argparse.ArgumentParser()
@@ -162,10 +212,6 @@ def main() :
     if inject_keys:
         dotenv_update_dct = modifiers_for_config.setdefault('yaml_substitutions',{})
         dotenv_update_dct.update( (k,os.environ.get(k,'')) for k in inject_keys)
-        print ('***************')
-        print ('dotenv_update_dct = \n{!r}'.format(dotenv_update_dct))
-        print ('***************')
-        exit()
 
     test_hook_module = importlib.import_module('irods_consortium_continuous_integration_test_module')
 
@@ -223,7 +269,23 @@ class CI_client_interface (object):
         if  proj is None:
             proj = compose.cli.command.get_project( self.compose_path )
 
-        proj.build()            # build and run from docker-compose.yml
+        build_order = self.config.get("build_services_in_order",[])
+
+        if build_order is None:
+            proj.build()                 # build all services from docker-compose.yml
+            Entire_Project_Built = True
+        else:
+                                         # build and run named services (to prepare/build for client run)
+            run_build_containers (proj, [build_order] if isinstance (buildorder,str) else list(build_order))
+            Entire_Project_Built = False
+
+        #  -- TODO  --
+        #  Determine which container to wait on for status code.
+        #  Usually "client-runner" or similar
+        # 
+        #  If entire project wasn't previously built, iterate through names of dependent services
+        #  and build them. then initiate the named client container
+
         containers = self.compose_prj = proj.up()
 
         # -- Match client container by name for status reporting
