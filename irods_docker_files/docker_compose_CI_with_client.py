@@ -18,6 +18,12 @@ from docker_compose_ci_util import (testgen, readgen,
                                     run_build_containers,
                                     get_ordered_dependencies)
 
+def disallow_updir (path, start):
+    relative_path = os.path.relpath (path, start = start)
+    if [elem for elem in relative_path.split( os.path.sep ) if elem == os.path.pardir ]:
+        return None  # no '..' please !
+    return relative_path
+
 # -------------------------------- Test code
 
 def test():
@@ -63,6 +69,12 @@ def main() :
     subprocess.check_output(['git', 'clone', '--recurse-submodules', '-q',
                              Args.remote_repository, Args.local_repository ])
 
+    if not os.path.isabs( Args.local_repository ):
+        print ("Local repository path must be absolute.")
+        print ("Please create a symbolic link /irods_jenkins_sandbox -> ~/jenkins_sandbox and name the")
+        print (" local repository to be just below that root level symbolic path.")
+        exit(1)
+
     subprocess.check_output(['git', 'checkout', Args.commitish], cwd=Args.local_repository)
 
     # Find the docker compose project in the cloned client repo,
@@ -99,7 +111,15 @@ def main() :
     initialize = getattr(test_hook_module,'init',None)
     if callable(initialize):
         dir_ = initialize()
-        if dir: compose_proj_dir = dir_
+        tmp = None        # Calculate location of docker-compose from a possibly relative path but don't let
+        if dir_:          #  any parent directories of the local repository be traversed to get there.
+            if not dir_.isabs():
+                dir_ = os.path.join( compose_proj_dir , dir_)
+            [tmp, compose_proj_dir] = [compose_proj_dir, disallow_updir(dir_, start = compose_proj_dir)]
+        if compose_proj_dir is None:
+            print("""Cannot use project directory {dir_!r} as a parent directory was referenced."""
+                  """It is potentially outside of the given local repository {compose_proj_dir!r}.""".format(**locals()))
+            exit(1)
 
     exit(test_hook_module.run(
         CI_client_interface (modifiers_for_config, compose_proj_dir)
@@ -158,11 +178,8 @@ class CI_client_interface (object):
                 run_build_containers(proj,
                                      [build_order] if isinstance (build_order,str) else list(build_order))
 
-        #  -- TODO  --
-        #  Determine which container to wait on for status code.
-        #  Usually "client-runner" or similar
-        #  Use "depends_on:" in the docker-compose.yml to specify run dependencies of the main container and thus which
-        #    services run in the up() phase.
+        #  The "depends_on:" entries in the docker-compose.yml will help determine run dependencies of the main container
+        #    for the up() phase, if a name for that container is specified in the configuration.
 
         main_service = self.config.get("up_service") # is the None object, if name not provided
 
@@ -170,8 +187,8 @@ class CI_client_interface (object):
             if not main_service:
                 print ("ERROR - A comprehensive docker-compose project build was not performed because build stages were given in the config.")
                 print ("        But an 'up_service' name was not given, which could result in running out-of-date services.  Exiting.... ")
-                exit(1)
-            proj.build( service_names=get_ordered_dependencies(proj,main_service) )
+                exit(2)
+            proj.build(service_names = get_ordered_dependencies(proj,main_service))
 
         containers = self.compose_prj = proj.up(service_names = [main_service] if main_service else None)
 
