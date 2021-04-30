@@ -45,7 +45,6 @@
           <description>JSON formatted client-dot configuration overrides</description>
           <defaultValue>{ 
   &quot;yaml_substitutions&quot;: {
-                &quot;irods_pkg_dir&quot;:&quot;&lt;INSERT_HOST_PATH_HERE&gt;&quot;
     },
     &quot;container_environments&quot;: {
     },
@@ -69,9 +68,11 @@ node {
              for(int i = 0; i &lt; 1; i++) {
                 def local_repo = PARAMETER_LOCAL_REPO_PREFIX +&apos;__&apos;+ env.JOB_NAME +&apos;__&apos;+ env.BUILD_NUMBER
                 def build_cmd = &apos;env irods_pkg_dir=&quot;&apos;+IRODS_PACKAGE_DIR+&apos;&quot; &apos; + 
-                                &apos;env externals_pkg_dir=&quot;&apos;+EXTERNALS_PACKAGE_DIR+&apos;&quot; &apos; + 
-                                &apos;    X=&quot;&apos; + &apos;HELLO&apos; + &apos;&quot; &apos; + // literal hello
-                                &apos;    DOTENV_INJECT_KEYS=irods_pkg_dir,externals_pkg_dir &apos; + 
+                                &apos;    externals_pkg_dir=&quot;&apos;+EXTERNALS_PACKAGE_DIR+&apos;&quot; &apos; +
+                                &apos;    externals_pkg_dir=&quot;&apos;+EXTERNALS_PACKAGE_DIR+&apos;&quot; &apos; +
+                                &apos;    irods_rest_client_repo=&quot;&apos;+PARAMETER_REMOTE_REPO+&apos;&quot; &apos; +
+                                &apos;    irods_rest_client_commitish=&quot;&apos;+PARAMETER_COMMITISH+&apos;&quot; &apos; +
+                                &apos; DOTENV_INJECT_KEYS=irods_pkg_dir,externals_pkg_dir,irods_rest_client_repo,irods_rest_client_commitish &apos; + 
                                 &apos; python3 -u docker_compose_CI_with_client.py &apos; +
                                 &apos; --remote_repo=&apos; + PARAMETER_REMOTE_REPO  +
                                 &apos; --local_repo=&apos;  + local_repo +
