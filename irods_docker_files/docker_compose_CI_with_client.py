@@ -49,6 +49,9 @@ def main() :
     parser.add_argument('-l','--local_repository', action='store', dest='local_repository', required=True,
                              help='Name of local/cloned repository in which to run')
 
+    parser.add_argument('-p','--preserve_dotenv', action='store_true', dest='preserve_dotenv', 
+                             help='''preserve an existing .env and append rather than truncating it.''')
+
     parser.add_argument('-j','--json_config', action='store', dest='json_config', default='{}',
                              help='''JSON dictionary to guide building and running tests''')
 
@@ -122,18 +125,19 @@ def main() :
             exit(1)
 
     exit(test_hook_module.run(
-        CI_client_interface (modifiers_for_config, compose_proj_dir)
+        CI_client_interface (modifiers_for_config, compose_proj_dir, preserve_dotenv = Args.preserve_dotenv)
     ))
 
 
 class CI_client_interface (object):
 
-    def __init__(self, modifier_config, compose_dir, compose_project=None):
+    def __init__(self, modifier_config, compose_dir, compose_project=None, preserve_dotenv = False):
 
         self.modifier_config = modifier_config
         self.config = {}
         self.compose_prj = compose_project
         self.compose_path = os.path.abspath(compose_dir)
+        self.preserve_dotenv = preserve_dotenv
 
 
     @staticmethod
@@ -219,7 +223,7 @@ class CI_client_interface (object):
     def _import_yaml_subs_and_environ_vars(self):
 
         yaml_subs = self.config.get("yaml_substitutions",{})
-        with open (join(self.compose_path,".env"),"a") as dotEnv_file:
+        with open (join(self.compose_path,".env"),("a" if self.preserve_dotenv else "w")) as dotEnv_file:
             for k,v in yaml_subs.items():
                 dotEnv_file.write("{k}={v}\n".format(**locals()))
 
