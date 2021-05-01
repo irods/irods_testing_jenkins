@@ -10,18 +10,25 @@ import sys
 import copy
 import json
 import time
+import struct
+import base64
 
-from os.path import join
+from os.path import join, normpath
 import compose.cli.command
 
 from docker_compose_ci_util import (testgen, readgen,
                                     run_build_containers,
                                     get_ordered_dependencies)
 
-def disallow_updir (path, start):
+def ascii_timestamp():
+    return base64.b32encode(
+             struct.pack('<q', int(time.time()*256))
+           ).decode().lower().rstrip('a')
+
+def without_updir(path, start):
     relative_path = os.path.relpath (path, start = start)
-    if [elem for elem in relative_path.split( os.path.sep ) if elem == os.path.pardir ]:
-        return None  # no '..' please !
+    if [elem for elem in relative_path.split( os.path.sep ) if elem == os.path.pardir]:
+        return None
     return relative_path
 
 # -------------------------------- Test code
@@ -49,7 +56,7 @@ def main() :
     parser.add_argument('-l','--local_repository', action='store', dest='local_repository', required=True,
                              help='Name of local/cloned repository in which to run')
 
-    parser.add_argument('-p','--preserve_dotenv', action='store_true', dest='preserve_dotenv', 
+    parser.add_argument('-p','--preserve_dotenv', action='store_true', dest='preserve_dotenv',
                              help='''preserve an existing .env and append rather than truncating it.''')
 
     parser.add_argument('-j','--json_config', action='store', dest='json_config', default='{}',
@@ -69,33 +76,34 @@ def main() :
       print(json.dumps(modifiers_for_config,indent=4))
       exit(126)
 
-    subprocess.check_output(['git', 'clone', '--recurse-submodules', '-q',
-                             Args.remote_repository, Args.local_repository ])
+    project_dir = normpath(Args.local_repository)
 
-    if not os.path.isabs( Args.local_repository ):
-        print ("Local repository path must be absolute.")
-        print ("Please create a symbolic link /irods_jenkins_sandbox -> ~/jenkins_sandbox and name the")
-        print (" local repository to be just below that root level symbolic path.")
+    if not os.path.isabs( project_dir ):
+        print("""Local repository {project_dir!r} must be absolute, e.g.: /jenkins_sandbox/myproject .""".format(**locals()))
         exit(1)
 
-    subprocess.check_output(['git', 'checkout', Args.commitish], cwd=Args.local_repository)
+    if os.path.exists( project_dir ):
+        project_dir += "_{}".format(ascii_timestamp())
 
-    # Find the docker compose project in the cloned client repo,
-    #  and import the module that runs the test
-    #
+    subprocess.check_output(['git', 'clone', '--recurse-submodules', '-q',
+                             Args.remote_repository, project_dir ])
+
+    subprocess.check_output(['git', 'checkout', Args.commitish], cwd = project_dir)
+
+    # Find the test hook module in the root of the cloned client repository,
 
     import importlib
-    sys.path.insert(0, Args.local_repository)
+    sys.path.insert(0, project_dir)
+    test_hook_module = importlib.import_module('irods_consortium_continuous_integration_test_module')
 
-    # You can modify the python3 command invoking this script from the Jenkins config.xml pipeline section, in
-    # order to insert new override KEY=VALUE pairs for modifiers_for_config.
-    # For example:
-    #
-    #    def build_cmd = 'env irods_package_dir="'+IRODS_PACKAGE_DIR+'" ' +  // IRODS_PACKAGE_DIR entry box value
-    #                             '    X="' + 'HELLO' + '" ' +               // literal value "HELLO"
-    #                             '    DOTENV_INJECT_KEYS=irods_package_dir,X ' +
+    ## We can modify the python3 command invoking this script (in the Jenkins config.xml pipeline section), in
+    ## order to insert text box entries as KEY=VALUE pairs as overrides in `modifiers_for_config' .
+    ## For example:
+    #    def build_cmd = 'env irods_package_dir="'+IRODS_PACKAGE_DIR+'" ' +  // Include IRODS_PACKAGE_DIR entry box's text value
+    #                             '    X="' + 'HELLO' + '" ' +               //  and variable 'X' having literal value "HELLO"
+    #                             '    DOTENV_INJECT_KEYS = irods_package_dir,X ' +
     #                             ' python3 -u docker_compose_CI_with_client.py ' +
-    #                             ' --remote_repo=' + PARAMETER_REMOTE_REPO  +
+    #                             ' --remote_repo=' + PARAMETER_REMOTE_REPO  + // ...
 
     entry_box_inject_keys = os.environ.get('DOTENV_INJECT_KEYS','')
 
@@ -104,41 +112,46 @@ def main() :
         dotenv_update_dct = modifiers_for_config.setdefault('yaml_substitutions',{})
         dotenv_update_dct.update( (k,os.environ.get(k,'')) for k in inject_keys)
 
-    test_hook_module = importlib.import_module('irods_consortium_continuous_integration_test_module')
+    # Exec the init function if found in the test hook
+    #   - The returned string value, if not empty, provides the path containing the docker-compose.yml for test
+    #     (Otherwise we default to the root directory for this.)
 
-    # The following runs the test_hook module imported from client repo. That module's
-    # run() function calls back via an injected object of class 'CI_client_interface'.
-
-    compose_proj_dir = Args.local_repository
-
+    option = {}
     initialize = getattr(test_hook_module,'init',None)
+
     if callable(initialize):
-        dir_ = initialize()
-        tmp = None        # Calculate location of docker-compose from a possibly relative path but don't let
-        if dir_:          #  any parent directories of the local repository be traversed to get there.
-            if not dir_.isabs():
-                dir_ = os.path.join( compose_proj_dir , dir_)
-            [tmp, compose_proj_dir] = [compose_proj_dir, disallow_updir(dir_, start = compose_proj_dir)]
-        if compose_proj_dir is None:
-            print("""Cannot use project directory {dir_!r} as a parent directory was referenced."""
-                  """It is potentially outside of the given local repository {compose_proj_dir!r}.""".format(**locals()))
-            exit(1)
+        dir_ = normpath(initialize()) # Allow hint for location of docker-compose project from a possibly relative
+        if dir_:                      # path but don't traverse any parent directories of the local repository.
+            if not os.path.isabs(dir_):
+                dir_ = normpath(join(project_dir, dir_))
+            if not without_updir(dir_, start = project_dir):
+                print("""Cannot use project directory {dir_!r} as a parent directory was referenced."""
+                      """It is potentially outside of the given local repository {project_dir!r}.""".format(**locals()))
+                exit(1)
+            if project_dir != dir_: option['proj_name'] = os.path.basename(project_dir)
+            project_dir = dir_
+
+    # Execute the run function in the client repo's test hook, which typically does the following:
+    #   - Sets up with a default configuration.
+    #   - Allows the overridie of these default configuration settings with any user-provided ones from Jenkins GUI.
+    #   - The injected CI object's run( ) method typically calls run_and_wait_on_client_exit,
+    #      which builds and runs services as containers under docker compose.
 
     exit(test_hook_module.run(
-        CI_client_interface (modifiers_for_config, compose_proj_dir, preserve_dotenv = Args.preserve_dotenv)
+        CI_client_interface (modifiers_for_config, project_dir, preserve_dotenv = Args.preserve_dotenv, proj_option = option)
     ))
 
 
 class CI_client_interface (object):
 
-    def __init__(self, modifier_config, compose_dir, compose_project=None, preserve_dotenv = False):
+    def __init__(self, modifier_config, compose_dir, compose_project=None, preserve_dotenv = False, proj_option = {}):
 
         self.modifier_config = modifier_config
         self.config = {}
         self.compose_prj = compose_project
         self.compose_path = os.path.abspath(compose_dir)
         self.preserve_dotenv = preserve_dotenv
-
+        self.proj_option = proj_option
 
     @staticmethod
     def _spawn_container_log_spoolers(containers, streams = ()):
@@ -167,7 +180,7 @@ class CI_client_interface (object):
 
         proj = self.compose_prj
         if  proj is None:
-            proj = compose.cli.command.get_project( self.compose_path )
+            proj = compose.cli.command.get_project(self.compose_path , **self.proj_option)
 
         build_order = self.config.get("build_services_in_order")  # should be 'None' if no build/prepare services
 
