@@ -128,7 +128,7 @@ def main() :
                 print("""Cannot use project directory {dir_!r} as a parent directory was referenced."""
                       """It is potentially outside of the given local repository {project_dir!r}.""".format(**locals()))
                 exit(1)
-            if project_dir != dir_: option['proj_name'] = os.path.basename(project_dir)
+            if project_dir != dir_: option['project_name'] = os.path.basename(project_dir)
             project_dir = dir_
 
     # Execute the run function in the client repo's test hook, which typically does the following:
