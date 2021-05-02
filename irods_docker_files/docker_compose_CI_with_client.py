@@ -22,8 +22,8 @@ from docker_compose_ci_util import (testgen, readgen,
 
 def ascii_timestamp():
     return base64.b32encode(
-             struct.pack('<q', int(time.time()*256))
-           ).decode().lower().rstrip('a')
+             struct.pack('<q', int(time.time()*256))[:5]
+           ).decode().lower()
 
 def without_updir(path, start):
     relative_path = os.path.relpath (path, start = start)
