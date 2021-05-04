@@ -19,6 +19,15 @@ def compile_EOL_regex(delimiter): return re.compile( b'('       # parentheses me
                                                     + delimiter
                                                     + b')' )
 
+# --------------------------------
+
+_build_options = {}
+
+def set_build_options(from_dict):
+    _build_options.update( from_dict )
+
+def get_build_options( ):
+    return dict( _build_options )
 
 # -------------------------------- Multithreaded output spooling docker compose container output to Jenkins console
 
@@ -65,12 +74,6 @@ class readgen:
             self.buf = list(filter(None,buf[-last+cut_offs:]))
         else:
             pass
-#######
-# dwm #
-      # if 'runner' in  self.ident:
-      #     log_lines = '*** dwm *** LEN of els in line buffer = {!r}'.format([len(x) for x in self.buf]).encode('utf-8')
-      # # dwm DEBUG -- # print('\t self.buf=', self.buf,file=sys.stderr)
-#######
         return log_lines
 
     # Thread entry point.
@@ -94,7 +97,7 @@ def run_build_containers( project, service_names_in_order ):
     # iterate through the named services, running the build process and CMD phase for each
     # Output should appear on the console for all parts built or commands run.
     for name in service_names_in_order:
-        project.build(service_names = [name])
+        project.build(service_names = [name], **get_build_options())
         s = service_lookup[name]
         c = s.create_container()
         dclient = docker.client.from_env()

@@ -16,9 +16,12 @@ import base64
 from os.path import join, normpath
 import compose.cli.command
 
-from docker_compose_ci_util import (testgen, readgen,
-                                    run_build_containers,
-                                    get_ordered_dependencies)
+from docker_compose_ci_util import ( testgen, readgen,
+                                     run_build_containers,
+                                     get_ordered_dependencies,
+                                     set_build_options,
+                                     get_build_options
+                                   )
 
 def ascii_timestamp():
     return base64.b32encode(
@@ -45,6 +48,11 @@ def test():
     )
 
 
+JENKINS_DEFAULTS = {
+    'build_options': { 'no_cache': True },
+    'project_down_when_client_exits': True,
+    'settings_for_project_down' : dict(remove_image_type = True, include_volumes = True)
+}
 
 def main() :
 
@@ -138,13 +146,15 @@ def main() :
     #      which builds and runs services as containers under docker compose.
 
     exit(test_hook_module.run(
-        CI_client_interface (modifiers_for_config, project_dir, preserve_dotenv = Args.preserve_dotenv, proj_option = option)
+        CI_client_interface (modifiers_for_config, project_dir, preserve_dotenv = Args.preserve_dotenv,
+                             jenkins_defaults = JENKINS_DEFAULTS, proj_option = option)
     ))
 
 
 class CI_client_interface (object):
 
-    def __init__(self, modifier_config, compose_dir, compose_project=None, preserve_dotenv = False, proj_option = {}):
+    def __init__(self, modifier_config, compose_dir, compose_project=None, preserve_dotenv = False,
+                 jenkins_defaults = (), proj_option = {}):
 
         self.modifier_config = modifier_config
         self.config = {}
@@ -152,6 +162,7 @@ class CI_client_interface (object):
         self.compose_path = os.path.abspath(compose_dir)
         self.preserve_dotenv = preserve_dotenv
         self.proj_option = proj_option
+        self.jenkins_defaults = dict( jenkins_defaults )
 
     @staticmethod
     def _spawn_container_log_spoolers(containers, streams = ()):
@@ -168,6 +179,9 @@ class CI_client_interface (object):
                                      name_pattern = 'client[-_]runner',
                                      rgx_flags    = re.IGNORECASE,
                                      import_vars  = True ):
+
+        Jenkins = self.config.get("jenkins_defaults",{})
+        set_build_options( Jenkins.get("build_options",{}) )
 
         #  Create YAML substitution file (.env) and the container environment files {SERVICE_NAME}.env
         #  for optional inclusion in each docker-compose.yml services stanza under the key "env_file".
@@ -186,7 +200,7 @@ class CI_client_interface (object):
 
         Entire_Project_Built = False
         if build_order is None:
-            proj.build()                 # build all services from docker-compose.yml
+            proj.build(**get_build_options())   # build all services from docker-compose.yml
             Entire_Project_Built = True
         else:
             # build and run named services (to prepare/build for client run)
@@ -205,9 +219,10 @@ class CI_client_interface (object):
                 print ("ERROR - A comprehensive docker-compose project build was not performed because build stages were given in the config.")
                 print ("        But an 'up_service' name was not given, which could result in running out-of-date services.  Exiting.... ")
                 exit(2)
-            proj.build(service_names = get_ordered_dependencies(proj,main_service))
+            proj.build(service_names = get_ordered_dependencies(proj,main_service),
+                       **get_build_options())
 
-        containers = self.compose_prj = proj.up(service_names = [main_service] if main_service else None)
+        containers = proj.up(service_names = [main_service] if main_service else None)
 
         # -- Match client container by a default name pattern if not given, else choose by config-provided name
         #
@@ -225,10 +240,10 @@ class CI_client_interface (object):
         self._spawn_container_log_spoolers(containers)
         status_code = status_containers[0].wait()
 
-        proj_down_setting = self.config.get("project_down_when_client_exits", False)
+        proj_down_setting = Jenkins.get("project_down_when_client_exits", False)
         print("DWM ::: proj_down_setting = ", proj_down_setting )
         if proj_down_setting:
-            proj.down(remove_image_type = False, include_volumes = True)
+            proj.down( **Jenkins.get('settings_for_project_down', {}) )
 
         return status_code
 
@@ -265,6 +280,8 @@ class CI_client_interface (object):
 
         if allow_override:
             update_lhs_scalars_with_rhs( self.config, self.modifier_config )
+
+        self.config['jenkins_defaults'] = self.jenkins_defaults
         return self.config.copy()
 
 if __name__ == '__main__':

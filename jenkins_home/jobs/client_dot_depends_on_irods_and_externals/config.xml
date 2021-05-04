@@ -47,9 +47,9 @@
   &quot;yaml_substitutions&quot;: {
     },
     &quot;container_environments&quot;: {
-    },
-    &quot;project_down_when_client_exits&quot;: false
-}</defaultValue>
+    }
+}
+</defaultValue>
           <trim>false</trim>
         </hudson.model.TextParameterDefinition>
       </parameterDefinitions>

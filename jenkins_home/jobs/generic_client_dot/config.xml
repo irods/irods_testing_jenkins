@@ -4,7 +4,7 @@
   <description>python client test suite</description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.31">
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.32">
       <autoRebuild>false</autoRebuild>
       <rebuildDisabled>false</rebuildDisabled>
     </com.sonyericsson.rebuild.RebuildSettings>
@@ -19,19 +19,17 @@
         <hudson.model.StringParameterDefinition>
           <name>PARAMETER_LOCAL_REPO_PREFIX</name>
           <description>Remote Repo, Destination for clone.   Job name and build number are later appended to arrive at a unique name.</description>
-          <defaultValue>prc_test</defaultValue>
+          <defaultValue>/irods_jenkins_sandbox/my_repo_test</defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>PARAMETER_COMMITISH</name>
           <description>SHA or branch name</description>
-          <defaultValue></defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>SETTING_OUTPUT_DIRECTORY</name>
           <description>Where (on the host) to put the output result</description>
-          <defaultValue></defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.TextParameterDefinition>
@@ -42,15 +40,14 @@
                 &quot;irods_pkg_dir&quot;:&quot;&lt;INSERT_HOST_PATH_HERE&gt;&quot;
     },
     &quot;container_environments&quot;: {
-    },
-    &quot;project_down_when_client_exits&quot;: false
+    }
 }</defaultValue>
           <trim>false</trim>
         </hudson.model.TextParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.89">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.90">
     <script>def mysh(script) { sh &quot;#!/bin/bash -e\n&quot; + script }
 node {
      def build_id = env.BUILD_ID
