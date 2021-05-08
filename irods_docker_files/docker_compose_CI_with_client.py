@@ -162,7 +162,7 @@ class CI_client_interface (object):
         self.compose_path = os.path.abspath(compose_dir)
         self.preserve_dotenv = preserve_dotenv
         self.proj_option = proj_option
-        self.jenkins_defaults = dict( jenkins_defaults )
+        self.__jenkins_defaults = dict( jenkins_defaults )
 
     @staticmethod
     def _spawn_container_log_spoolers(containers, streams = ()):
@@ -240,7 +240,7 @@ class CI_client_interface (object):
         self._spawn_container_log_spoolers(containers)
         status_code = status_containers[0].wait()
 
-        proj_down_setting = Jenkins.get("project_down_when_client_exits", False)
+        proj_down_setting = Jenkins.get("project_down_when_client_exits", None)
         print("DWM ::: proj_down_setting = ", proj_down_setting )
         if proj_down_setting:
             proj.down( **Jenkins.get('settings_for_project_down', {}) )
@@ -263,7 +263,9 @@ class CI_client_interface (object):
 
 
     def store_config(self, basic_config, allow_override = True ):
+
         self.config = copy.deepcopy(basic_config)
+
         def update_lhs_scalars_with_rhs (lhs, rhs, keys=()):
             key_hierarchy = lambda newkey: list(keys)+[newkey]
             for k,v in rhs.items():
@@ -278,11 +280,12 @@ class CI_client_interface (object):
                           "\ndue to mismatch of value type in basic and modifier configs"
                           "" .format(key_hierarchy(k)), file = sys.stderr)
 
+        self.config['jenkins_defaults'] = self.__jenkins_defaults
+
         if allow_override:
             update_lhs_scalars_with_rhs( self.config, self.modifier_config )
 
-        self.config['jenkins_defaults'] = self.jenkins_defaults
-        return self.config.copy()
+        return copy.deepcopy(self.config)
 
 if __name__ == '__main__':
     if sys.argv[1:] == ['-test']:
