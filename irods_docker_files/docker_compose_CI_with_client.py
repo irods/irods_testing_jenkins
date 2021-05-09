@@ -164,6 +164,7 @@ class CI_client_interface (object):
         self.proj_option = proj_option
         self.__jenkins_defaults = dict( jenkins_defaults )
 
+
     @staticmethod
     def _spawn_container_log_spoolers(containers, streams = ()):
         filelist = [sys.stdout] + list(_ for _ in streams)
@@ -262,30 +263,30 @@ class CI_client_interface (object):
                     containerEnvironment_File.write("{k}={v}\n".format(**locals()))
 
 
-    def store_config(self, basic_config, allow_override = True ):
-
-        self.config = copy.deepcopy(basic_config)
-
-        def update_lhs_scalars_with_rhs (lhs, rhs, keys=()):
-            key_hierarchy = lambda newkey: list(keys)+[newkey]
-            for k,v in rhs.items():
-                v_lhs = lhs.get(k,None)
-                if v_lhs is None or type(v) is type(v_lhs): #-- allow update when same types or lacking in LHS
-                    if v_lhs is not None and type(v) is dict: #-- recurse if LHS key exists and was has 'dict' type
-                        update_lhs_scalars_with_rhs( lhs[k] , rhs[k], key_hierarchy(k) )
-                    else:
-                        lhs [k] = rhs [k]
+    @staticmethod
+    def update_lhs_scalars_with_rhs (lhs, rhs, keys=()):
+        key_hierarchy = lambda newkey: list(keys)+[newkey]
+        for k,v in rhs.items():
+            v_lhs = lhs.get(k,None)
+            if v_lhs is None or type(v) is type(v_lhs): #-- allow update when same types or lacking in LHS
+                if v_lhs is not None and type(v) is dict: #-- recurse if LHS key exists and RHS has 'dict' type
+                    update_lhs_scalars_with_rhs( lhs[k] , rhs[k], key_hierarchy(k) )
                 else:
-                    print("\n-- WARNING -- not modifying configuration value at level {!r} in key hierarchy"
-                          "\ndue to mismatch of value type in basic and modifier configs"
-                          "" .format(key_hierarchy(k)), file = sys.stderr)
+                    lhs [k] = rhs [k]
+            else:
+                print("\n-- WARNING -- not modifying configuration value at level {!r} in key hierarchy"
+                      "\ndue to mismatch of value type in basic and modifier configs"
+                      "" .format(key_hierarchy(k)), file = sys.stderr)
 
+
+    def store_config(self, basic_config, allow_override = True ):
+        self.config = copy.deepcopy(basic_config)
         self.config['jenkins_defaults'] = self.__jenkins_defaults
-
         if allow_override:
-            update_lhs_scalars_with_rhs( self.config, self.modifier_config )
-
+            self.update_lhs_scalars_with_rhs( self.config,
+                                              self.modifier_config )
         return copy.deepcopy(self.config)
+
 
 if __name__ == '__main__':
     if sys.argv[1:] == ['-test']:
