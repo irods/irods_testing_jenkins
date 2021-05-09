@@ -23,16 +23,35 @@ from docker_compose_ci_util import ( testgen, readgen,
                                      get_build_options
                                    )
 
-def ascii_timestamp():
+
+# -------------------------------- Local Utility functions
+
+def _ascii_timestamp():
     return base64.b32encode(
              struct.pack('<q', int(time.time()*256))[:5]
            ).decode().lower()
 
-def without_updir(path, start):
+def _without_updir(path, start):
     relative_path = os.path.relpath (path, start = start)
     if [elem for elem in relative_path.split( os.path.sep ) if elem == os.path.pardir]:
         return None
     return relative_path
+
+
+def _update_lhs_scalars_with_rhs (lhs, rhs, keys=()):
+    key_hierarchy = lambda newkey: list(keys)+[newkey]
+    for k,v in rhs.items():
+        v_lhs = lhs.get(k,None)
+        if v_lhs is None or type(v) is type(v_lhs): #-- allow update when same types or lacking in LHS
+            if v_lhs is not None and type(v) is dict: #-- recurse if LHS key exists and RHS has 'dict' type
+                _update_lhs_scalars_with_rhs( lhs[k] , rhs[k], key_hierarchy(k) )
+            else:
+                lhs [k] = rhs [k]
+        else:
+            print("\n-- WARNING -- not modifying configuration value at level {!r} in key hierarchy"
+                  "\ndue to mismatch of value type in basic and modifier configs"
+                  "" .format(key_hierarchy(k)), file = sys.stderr)
+
 
 # -------------------------------- Test code
 
@@ -47,6 +66,8 @@ def test():
         ident_ = 'mhyident'
     )
 
+
+# -------------------------------- Reasonable Jenkins defaults
 
 JENKINS_DEFAULTS = {
     'build_options': { 'no_cache': True },
@@ -91,7 +112,7 @@ def main() :
         exit(1)
 
     if os.path.exists( project_dir ):
-        project_dir += "_{}".format(ascii_timestamp())
+        project_dir += "_{}".format(_ascii_timestamp())
 
     subprocess.check_output(['git', 'clone', '--recurse-submodules', '-q',
                              Args.remote_repository, project_dir ])
@@ -132,7 +153,7 @@ def main() :
         if dir_:                      # path but don't traverse any parent directories of the local repository.
             if not os.path.isabs(dir_):
                 dir_ = normpath(join(project_dir, dir_))
-            if not without_updir(dir_, start = project_dir):
+            if not _without_updir(dir_, start = project_dir):
                 print("""Cannot use project directory {dir_!r} as a parent directory was referenced."""
                       """It is potentially outside of the given local repository {project_dir!r}.""".format(**locals()))
                 exit(1)
@@ -263,28 +284,12 @@ class CI_client_interface (object):
                     containerEnvironment_File.write("{k}={v}\n".format(**locals()))
 
 
-    @staticmethod
-    def update_lhs_scalars_with_rhs (lhs, rhs, keys=()):
-        key_hierarchy = lambda newkey: list(keys)+[newkey]
-        for k,v in rhs.items():
-            v_lhs = lhs.get(k,None)
-            if v_lhs is None or type(v) is type(v_lhs): #-- allow update when same types or lacking in LHS
-                if v_lhs is not None and type(v) is dict: #-- recurse if LHS key exists and RHS has 'dict' type
-                    update_lhs_scalars_with_rhs( lhs[k] , rhs[k], key_hierarchy(k) )
-                else:
-                    lhs [k] = rhs [k]
-            else:
-                print("\n-- WARNING -- not modifying configuration value at level {!r} in key hierarchy"
-                      "\ndue to mismatch of value type in basic and modifier configs"
-                      "" .format(key_hierarchy(k)), file = sys.stderr)
-
-
     def store_config(self, basic_config, allow_override = True ):
         self.config = copy.deepcopy(basic_config)
         self.config['jenkins_defaults'] = self.__jenkins_defaults
         if allow_override:
-            self.update_lhs_scalars_with_rhs( self.config,
-                                              self.modifier_config )
+            _update_lhs_scalars_with_rhs( self.config,
+                                          self.modifier_config )
         return copy.deepcopy(self.config)
 
 
