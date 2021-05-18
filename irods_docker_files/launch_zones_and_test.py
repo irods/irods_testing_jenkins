@@ -26,7 +26,7 @@ def build_zones(cmd_line_args):
     base_image = get_base_image(cmd_line_args.platform_target, cmd_line_args.image_tag)
     federation_tag_list=[]
     for x in range(cmd_line_args.zones):
-        zone_id = x + 1    
+        zone_id = x + 1
         stage = 'federation_zone_' + str(zone_id)
         federation_tag = get_build_tag(cmd_line_args.platform_target, stage, cmd_line_args.build_id)
         docker_cmds_utilities.build_irods_zone(federation_tag, base_image, cmd_line_args.database_type, 'Dockerfile.fed')
