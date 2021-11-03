@@ -232,12 +232,23 @@ def install_irods_packages(database_type, database_machine, install_externals, i
                 install_os_packages([munge_external])
                 #need to install munge here too after munge in core dev
 
-            runtime_package = server_package.replace('irods-server', 'irods-runtime')
-            icommands_package = server_package.replace('irods-server', 'irods-icommands')
+            runtime_package = get_runtime_package(irods_packages_directory)
+            icommands_package = get_icommands_package(irods_packages_directory)
             database_plugin = get_database_plugin(irods_packages_directory, database_type)
             install_os_packages([runtime_package, icommands_package, server_package, database_plugin])
         else:
             raise RuntimeError('unhandled package name')
+
+
+def get_icommands_package(irods_packages_directory):
+    return os.path.join(irods_packages_directory, filter(
+                        lambda x:'irods-icommands' in x,
+                        os.listdir(irods_packages_directory))[0])
+
+def get_runtime_package(irods_packages_directory):
+    return os.path.join(irods_packages_directory, filter(
+                        lambda x:'irods-runtime' in x,
+                        os.listdir(irods_packages_directory))[0])
 
 def get_database_plugin(irods_packages_directory, database_type):
     if database_type == 'mariadb':
