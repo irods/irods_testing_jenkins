@@ -4,22 +4,38 @@ USER root
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils
+# install stuff we need to install stuff
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends apt-utils && \
+    apt-get install -y \
+        curl \
+        apt-transport-https \
+        ca-certificates \
+        gnupg2 \
+        software-properties-common \
+        lsb-release \
+    && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Workaround for debian phasing out python 2
-RUN apt-get install -y python-setuptools curl &&\
-    ln -s /usr/bin/python2 /usr/bin/python &&\
-    curl -sL https://bootstrap.pypa.io/pip/2.7/get-pip.py --output /tmp/get-pip.py &&\
-    python2 /tmp/get-pip.py &&\
-    rm /tmp/get-pip.py &&\
-    pip2 install docker pygithub==1.45
+RUN apt-get update && \
+    apt-get install -y python-setuptools && \
+    ln -s /usr/bin/python2 /usr/bin/python && \
+    apt-get clean && \
+    curl -sL https://bootstrap.pypa.io/pip/2.7/get-pip.py --output /tmp/get-pip.py && \
+    python2 /tmp/get-pip.py && \
+    pip2 --no-cache-dir install docker pygithub==1.45 && \
+    rm -rf /var/lib/apt/lists/* /tmp/*
 
-RUN apt-get install -qqy apt-transport-https ca-certificates gnupg2 software-properties-common && \
-    curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
+# Go Go Gadget Docker!
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
     apt-key fingerprint 0EBFCD88 && \
     add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
-    apt-get update -qq && \
-    apt-get install -qqy docker-ce
+    apt-get update && \
+    apt-get install -y docker-ce && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/*
 
 ENV IRODS_DOCKER_FILES=/irods_docker_files
 ENV JENKINS_HOME=/var/jenkins_home

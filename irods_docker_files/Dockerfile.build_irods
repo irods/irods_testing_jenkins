@@ -17,7 +17,24 @@ ENV IRODS_BUILD_DIRECTORY=/irods_build
 
 ENV IRODS_REPO_DIRECTORY=/irods_git_repo
 
-RUN { apt-get update && apt-get install -y gcc g++; } || { yum update -y && yum install -y gcc g++; }
+RUN { \
+        apt-get update && \
+        apt-get install -y \
+            gcc \
+            g++ \
+        && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/* /tmp/* ; \
+    } || \
+    { \
+        yum install -y ca-certificates && \
+        yum install -y \
+            gcc \
+            g++ \
+        && \
+        yum clean all && \
+        rm -rf /var/cache/yum /tmp/* ; \
+    }
 
 RUN mkdir -p $IRODS_REPO_DIRECTORY && \
     chmod -R 775 $IRODS_REPO_DIRECTORY && \

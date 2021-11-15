@@ -6,15 +6,19 @@ FROM $base_image as centos_systemd
 
 ENV container docker
 
-RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == \
-systemd-tmpfiles-setup.service ] || rm -f $i; done); \
-rm -f /lib/systemd/system/multi-user.target.wants/*;\
-rm -f /etc/systemd/system/*.wants/*;\
-rm -f /lib/systemd/system/local-fs.target.wants/*; \
-rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
-rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
-rm -f /lib/systemd/system/basic.target.wants/*;\
-rm -f /lib/systemd/system/anaconda.target.wants/*;
+RUN ( \
+        cd /lib/systemd/system/sysinit.target.wants/ && \
+        for i in * ; do \
+            [ $i == systemd-tmpfiles-setup.service ] || rm -f $i ; \
+        done \
+    ) ; \
+    rm -f /lib/systemd/system/multi-user.target.wants/* ; \
+    rm -f /etc/systemd/system/*.wants/* ; \
+    rm -f /lib/systemd/system/local-fs.target.wants/* ; \
+    rm -f /lib/systemd/system/sockets.target.wants/*udev* ; \
+    rm -f /lib/systemd/system/sockets.target.wants/*initctl* ;  \
+    rm -f /lib/systemd/system/basic.target.wants/* ; \
+    rm -f /lib/systemd/system/anaconda.target.wants/*
 
 VOLUME ["/sys/fs/cgroup"]
 
@@ -27,28 +31,67 @@ CMD ["/sbin/init"]
 #
 FROM centos_systemd
 
-RUN yum -y update && yum clean all && \
-    yum -y install epel-release sudo vim wget zip rpm-build make cmake3 gcc-c++ nmap-ncat && yum clean all && \
-    yum -y install python python-psutil python-requests python-jsonschema && \ 
-    yum -y install python-pip git net-tools iputils && \
-    yum clean all
+# install stuff we need to install stuff
+RUN yum install -y ca-certificates && \
+    yum install -y epel-release && \
+    yum install -y \
+        wget \
+        yum-utils \
+    && \
+    yum clean all && \
+    rm -rf /var/cache/yum /tmp/*
 
-RUN pip install --upgrade 'pip<21.0'
-RUN pip install --ignore-installed pygithub==1.45
-RUN python -m pip install -U pyOpenSSL==16.2.0
+# essentials
+RUN yum install -y \
+        sudo \
+        vim \
+        zip \
+        rpm-build \
+        make \
+        cmake3 \
+        gcc-c++ \
+        nmap-ncat \
+        net-tools \
+        iputils \
+        git \
+        initscripts \
+        fuse \
+        fuse-devel \
+        device-mapper-persistent-data \
+        lvm2 \
+        rsyslog \
+    && \
+    yum clean all && \
+    rm -rf /var/cache/yum /tmp/*
 
-RUN yum -y install yum-utils device-mapper-persistent-data lvm2 rsyslog
+# Go Go Gadget Docker!
+RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
+    yum install -y \
+        docker-ce \
+        docker-ce-cli \
+        containerd.io \
+    && \
+    yum clean all && \
+    rm -rf /var/cache/yum /tmp/*
 
-RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-
-RUN yum -y install docker-ce docker-ce-cli containerd.io
-
-RUN yum -y install initscripts && yum clean all
-
-RUN yum -y install fuse fuse-devel
+# python stuff
+RUN yum install -y \
+        python-psutil \
+        python-jsonschema \
+        python-pip \
+        python-urllib3 \
+    && \
+    yum clean all && \
+    python -m pip --no-cache-dir install --upgrade "pip<21.0" && \
+    python -m pip --no-cache-dir install --upgrade setuptools && \
+    python -m pip --no-cache-dir install pygithub==1.45 && \
+    python -m pip --no-cache-dir install --upgrade 'cryptography<=2.9.2' && \
+    python -m pip --no-cache-dir install --upgrade pyOpenSSL==16.2.0 && \
+    rm -rf /var/cache/yum /tmp/*
 
 RUN cd /tmp && git clone https://github.com/irods/irods_python_ci_utilities && \
-    cd irods_python_ci_utilities && python setup.py install
+    cd irods_python_ci_utilities && python setup.py install && \
+    cd / && rm -rf /tmp/*
 
 ENV IRODS_BUILD_DIRECTORY=/irods_build
 ENV IRODS_TEST_RESULTS=/irods_test_env
