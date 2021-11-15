@@ -1,12 +1,18 @@
 FROM jenkins/jenkins
 
 USER root
-RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils &&\
-    DEBIAN_FRONTEND=noninteractive &&\
-    apt-get install -y python-pip &&\
-    pip install docker pygithub==1.45
+RUN apt-get update -qq && apt-get install -y --no-install-recommends apt-utils
 
-RUN apt-get install -qqy apt-transport-https ca-certificates curl gnupg2 software-properties-common && \
+# Workaround for debian phasing out python 2
+RUN DEBIAN_FRONTEND=noninteractive &&\
+    apt-get install -y python-setuptools curl &&\
+    ln -s /usr/bin/python2 /usr/bin/python &&\
+    curl -sL https://bootstrap.pypa.io/pip/2.7/get-pip.py --output /tmp/get-pip.py &&\
+    python2 /tmp/get-pip.py &&\
+    rm /tmp/get-pip.py &&\
+    pip2 install docker pygithub==1.45
+
+RUN apt-get install -qqy apt-transport-https ca-certificates gnupg2 software-properties-common && \
     curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
     apt-key fingerprint 0EBFCD88 && \
     add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
